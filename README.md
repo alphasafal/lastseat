@@ -15,6 +15,12 @@ Built for the Hack4Hack Crew Hiring Challenge 2026, problem statement 1.
 Stack: React 19 + Vite, Node.js 22 + Express 5, MongoDB 8 (official driver). No Redis, no
 message broker, no ORM.
 
+![The board: teams with open seats, drawn as rows of seats](docs/screenshots/board.png)
+
+| Team page as the leader                 | Suggested teammates, with the score explained    |
+| --------------------------------------- | ------------------------------------------------ |
+| ![Team page](docs/screenshots/team.png) | ![Suggestions](docs/screenshots/suggestions.png) |
+
 ## Run it
 
 One command, with Docker:
