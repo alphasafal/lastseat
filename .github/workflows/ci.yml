@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npx prettier --check .
+
+      - name: Build the web app
+        run: npm run build
+
+      # Transactions and change streams need a replica set, so the stock `services:` container
+      # (a standalone mongod) is not enough. One node started with --replSet is.
+      - name: Start MongoDB as a one-node replica set
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:8 --replSet rs0 --bind_ip_all
+          npm run db:init -w server
+
+      - name: API tests (includes the 50-way race test)
+        run: npm test -w server -- --test-reporter=spec
+
+      - name: MongoDB logs
+        if: failure()
+        run: docker logs mongo | tail -n 200
