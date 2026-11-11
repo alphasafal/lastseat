@@ -25,6 +25,8 @@ export const config = {
   session: {
     cookieName: 'sid',
     ttlMs: 7 * 24 * 60 * 60 * 1000,
+    // How long a verified session is trusted without asking the database again.
+    cacheMs: int('SESSION_CACHE_MS', 10_000),
   },
 
   invite: {

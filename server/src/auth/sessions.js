@@ -23,7 +23,35 @@ export async function createSession(user) {
 }
 
 export async function destroySession(token) {
-  if (token) await col.sessions().deleteOne({ _id: sha256(token) });
+  if (!token) return;
+  verified.delete(sha256(token));
+  await col.sessions().deleteOne({ _id: sha256(token) });
+}
+
+// Verified sessions are remembered for a few seconds, otherwise every request - including
+// every board read - would start with a database round trip. The cost: after a logout,
+// another server instance may accept the old cookie for up to `cacheMs` longer.
+const verified = new Map();
+const MAX_CACHED_SESSIONS = 50_000;
+
+async function findSession(token) {
+  const id = sha256(token);
+  const now = Date.now();
+  const cached = verified.get(id);
+  if (cached && cached.until > now) return cached.auth;
+
+  const session = await col.sessions().findOne({ _id: id, expiresAt: { $gt: new Date(now) } });
+  if (!session) {
+    verified.delete(id);
+    return null;
+  }
+  const auth = { userId: session.userId, name: session.name, token };
+  if (verified.size >= MAX_CACHED_SESSIONS) verified.clear();
+  verified.set(id, {
+    auth,
+    until: Math.min(now + config.session.cacheMs, session.expiresAt.getTime()),
+  });
+  return auth;
 }
 
 export function setSessionCookie(res, token) {
@@ -55,10 +83,8 @@ export function readCookie(req, name) {
 export async function loadSession(req, _res, next) {
   const token = readCookie(req, config.session.cookieName);
   if (token && token.length <= 128) {
-    const session = await col
-      .sessions()
-      .findOne({ _id: sha256(token), expiresAt: { $gt: new Date() } });
-    if (session) req.auth = { userId: session.userId, name: session.name, token };
+    const auth = await findSession(token);
+    if (auth) req.auth = auth;
   }
   next();
 }
