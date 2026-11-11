@@ -48,4 +48,13 @@ export default [
     files: ['web/vite.config.js'],
     languageOptions: { globals: globals.node },
   },
+  {
+    // Runs in Node but passes functions into the browser page, so it sees both worlds.
+    files: ['e2e/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: 'module',
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
 ];
