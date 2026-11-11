@@ -4,6 +4,7 @@
 // the request handlers. So an event reaches clients only after its transaction has committed,
 // and it reaches clients connected to *every* server instance, without Redis.
 
+import { invalidateAllBoards, invalidateBoard } from '../board/cache.js';
 import { config } from '../config.js';
 import { auditView } from '../lib/views.js';
 import { metrics } from '../lib/metrics.js';
@@ -66,6 +67,9 @@ export function frameFor(entry) {
 
 /** Delivers one committed audit entry to everyone allowed to see it. */
 export function publish(entry) {
+  // First drop cached board pages for this hackathon: from here on, a fetch sees this change.
+  invalidateBoard(entry.hackathonId);
+
   const clients = byHackathon.get(String(entry.hackathonId));
   if (!clients) return;
 
@@ -98,6 +102,7 @@ export function publish(entry) {
 
 /** Tells every client its picture may be stale (used after the change stream had to restart). */
 export function broadcastResync() {
+  invalidateAllBoards();
   for (const clients of byHackathon.values()) {
     for (const client of clients) write(client, 'event: resync\ndata: {}\n\n');
   }

@@ -1,4 +1,5 @@
-import { ObjectId, col } from '../db.js';
+import { invalidateBoard } from '../board/cache.js';
+import { ObjectId, col, onCommit } from '../db.js';
 import { personView, teamView } from './views.js';
 
 // Events anyone on the hackathon board may see. Everything else (invites, join requests)
@@ -56,4 +57,7 @@ export async function writeAudit(session, entries) {
   const list = Array.isArray(entries) ? entries : [entries];
   if (list.length === 0) return;
   await col.audit().insertMany(list, { session });
+  // Read-your-writes on this instance: the person who made the change sees it on their very
+  // next board fetch, without waiting for the change stream to deliver the event.
+  onCommit(session, () => invalidateBoard(list[0].hackathonId));
 }

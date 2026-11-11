@@ -152,9 +152,11 @@ export async function withTransaction(work) {
   const startedAt = Date.now();
   let attempt = 0;
   try {
-    return await session.withTransaction(
+    const result = await session.withTransaction(
       async () => {
         attempt += 1;
+        // Hooks registered by an attempt that was rolled back must not survive it.
+        commitHooks.set(session, []);
         if (attempt > 1) {
           metrics.txnRetries.inc();
           if (Date.now() - startedAt > config.txnDeadlineMs) throw errors.busy();
@@ -165,9 +167,21 @@ export async function withTransaction(work) {
       },
       { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } },
     );
+    for (const hook of commitHooks.get(session) ?? []) hook();
+    return result;
   } finally {
     await session.endSession();
   }
+}
+
+const commitHooks = new WeakMap();
+
+/**
+ * Registers a side effect that runs only if the surrounding transaction commits, and only
+ * once however many times the transaction was retried.
+ */
+export function onCommit(session, hook) {
+  commitHooks.get(session)?.push(hook);
 }
 
 /**

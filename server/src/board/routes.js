@@ -5,6 +5,7 @@ import { getHackathon, listHackathons } from '../hackathons.js';
 import { errors } from '../lib/errors.js';
 import { parse, parseId, schemas } from '../lib/validate.js';
 import { hackathonView, personView, teamView } from '../lib/views.js';
+import { cachedPage, sendPage } from './cache.js';
 import { rankCandidates } from './score.js';
 
 export const boardRouter = Router();
@@ -39,7 +40,7 @@ function afterCursor(cursor) {
   };
 }
 
-async function page(collection, filter, indexName, limit, view) {
+async function findPage(collection, filter, indexName, limit, view) {
   const docs = await collection
     .find(filter)
     .sort({ updatedAt: -1, _id: -1 })
@@ -87,41 +88,60 @@ boardRouter.get('/hackathons/:hackathonId', async (req, res) => {
 });
 
 boardRouter.get('/hackathons/:hackathonId/board/teams', async (req, res) => {
-  const hackathonId = toObjectId(parseId(req.params.hackathonId, 'hackathonId'));
+  const id = parseId(req.params.hackathonId, 'hackathonId');
+  const hackathonId = toObjectId(id);
   const { skill, cursor, limit } = parse(schemas.boardQuery, req.query);
-  const filter = {
-    hackathonId,
-    openSeats: { $gt: 0 },
-    ...(skill ? { lookingFor: skill } : {}),
-    ...afterCursor(cursor),
-  };
-  const [result, totals] = await Promise.all([
-    page(col.teams(), filter, skill ? 'board_teams_by_skill' : 'board_teams', limit, teamView),
-    boardTotals(hackathonId),
-  ]);
-  res.json({ ...result, totals });
+  // Validated before the cache lookup, so a bad cursor is a 400 and never becomes a key.
+  const after = afterCursor(cursor);
+
+  const page = await cachedPage(id, `teams|${skill ?? ''}|${cursor ?? ''}|${limit}`, async () => {
+    const filter = {
+      hackathonId,
+      openSeats: { $gt: 0 },
+      ...(skill ? { lookingFor: skill } : {}),
+      ...after,
+    };
+    const [result, totals] = await Promise.all([
+      findPage(
+        col.teams(),
+        filter,
+        skill ? 'board_teams_by_skill' : 'board_teams',
+        limit,
+        teamView,
+      ),
+      boardTotals(hackathonId),
+    ]);
+    return { ...result, totals };
+  });
+  sendPage(req, res, page);
 });
 
 boardRouter.get('/hackathons/:hackathonId/board/people', async (req, res) => {
-  const hackathonId = toObjectId(parseId(req.params.hackathonId, 'hackathonId'));
+  const id = parseId(req.params.hackathonId, 'hackathonId');
+  const hackathonId = toObjectId(id);
   const { skill, cursor, limit } = parse(schemas.boardQuery, req.query);
-  const filter = {
-    hackathonId,
-    lookingForTeam: true,
-    ...(skill ? { skills: skill } : {}),
-    ...afterCursor(cursor),
-  };
-  const [result, totals] = await Promise.all([
-    page(
-      col.participants(),
-      filter,
-      skill ? 'board_people_by_skill' : 'board_people',
-      limit,
-      personView,
-    ),
-    boardTotals(hackathonId),
-  ]);
-  res.json({ ...result, totals });
+  const after = afterCursor(cursor);
+
+  const page = await cachedPage(id, `people|${skill ?? ''}|${cursor ?? ''}|${limit}`, async () => {
+    const filter = {
+      hackathonId,
+      lookingForTeam: true,
+      ...(skill ? { skills: skill } : {}),
+      ...after,
+    };
+    const [result, totals] = await Promise.all([
+      findPage(
+        col.participants(),
+        filter,
+        skill ? 'board_people_by_skill' : 'board_people',
+        limit,
+        personView,
+      ),
+      boardTotals(hackathonId),
+    ]);
+    return { ...result, totals };
+  });
+  sendPage(req, res, page);
 });
 
 boardRouter.get('/hackathons/:hackathonId/suggestions', async (req, res) => {
