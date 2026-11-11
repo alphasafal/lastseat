@@ -18,10 +18,12 @@ export class AppError extends Error {
 }
 
 export const errors = {
-  validation: (issues) => new AppError(400, 'VALIDATION_FAILED', 'Request is not valid.', { issues }),
+  validation: (issues) =>
+    new AppError(400, 'VALIDATION_FAILED', 'Request is not valid.', { issues }),
   unauthenticated: () => new AppError(401, 'UNAUTHENTICATED', 'Sign in to continue.'),
   badCredentials: () => new AppError(401, 'BAD_CREDENTIALS', 'Email or password is incorrect.'),
-  forbidden: (message = 'You are not allowed to do that.') => new AppError(403, 'FORBIDDEN', message),
+  forbidden: (message = 'You are not allowed to do that.') =>
+    new AppError(403, 'FORBIDDEN', message),
   notLeader: () => new AppError(403, 'NOT_TEAM_LEADER', 'Only the team leader can do that.'),
   crossOrigin: () => new AppError(403, 'CROSS_ORIGIN', 'Cross-origin requests are not accepted.'),
   notFound: (what = 'Resource') => new AppError(404, 'NOT_FOUND', `${what} was not found.`),
@@ -43,7 +45,11 @@ export const errors = {
   requestNotPending: () =>
     new AppError(409, 'REQUEST_NOT_PENDING', 'This request has already been decided.'),
   tooManyRequests: (limit) =>
-    new AppError(409, 'TOO_MANY_PENDING_REQUESTS', `You can have at most ${limit} pending requests.`),
+    new AppError(
+      409,
+      'TOO_MANY_PENDING_REQUESTS',
+      `You can have at most ${limit} pending requests.`,
+    ),
   tooManyInvites: (limit) =>
     new AppError(409, 'TOO_MANY_INVITES', `A team can have at most ${limit} active invite codes.`),
   conflict: () =>
@@ -57,6 +63,10 @@ export const errors = {
       'IDEMPOTENCY_KEY_REUSED',
       'This Idempotency-Key was already used for a different request.',
     ),
+  busy: () =>
+    new AppError(503, 'BUSY', 'This team is busy right now. Please try again in a moment.', {
+      retryAfterSec: 2,
+    }),
   rateLimited: (retryAfterSec) =>
     new AppError(429, 'RATE_LIMITED', 'Too many attempts. Please wait and try again.', {
       retryAfterSec,

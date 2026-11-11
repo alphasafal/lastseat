@@ -18,6 +18,10 @@ export const config = {
   metricsToken: env.METRICS_TOKEN ?? '',
   logLevel: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : 'info'),
 
+  // A transaction that keeps losing races gives up after this long and the client is told
+  // to retry, instead of holding a request open indefinitely.
+  txnDeadlineMs: int('TXN_DEADLINE_MS', 8000),
+
   session: {
     cookieName: 'sid',
     ttlMs: 7 * 24 * 60 * 60 * 1000,

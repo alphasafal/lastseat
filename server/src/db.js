@@ -1,5 +1,6 @@
 import { MongoClient, MongoError, ObjectId } from 'mongodb';
 import { config } from './config.js';
+import { errors } from './lib/errors.js';
 import { metrics } from './lib/metrics.js';
 
 /** @type {MongoClient} */
@@ -50,7 +51,7 @@ export const col = {
 };
 
 /**
- * The indexes are part of the design, not an optimisation: the two unique indexes on `teams`
+ * The indexes are part of the design, not an optimization: the two unique indexes on `teams`
  * are what make "one team per person" impossible to violate, whatever the application does.
  */
 export async function ensureIndexes() {
@@ -65,34 +66,42 @@ export async function ensureIndexes() {
       .participants()
       .createIndex({ hackathonId: 1, userId: 1 }, { unique: true, name: INDEX.participant }),
     // People board: only participants who are looking are in the index at all.
-    col.participants().createIndex(
-      { hackathonId: 1, updatedAt: -1, _id: -1 },
-      { name: 'board_people', partialFilterExpression: { lookingForTeam: true } },
-    ),
-    col.participants().createIndex(
-      { hackathonId: 1, skills: 1, updatedAt: -1, _id: -1 },
-      { name: 'board_people_by_skill', partialFilterExpression: { lookingForTeam: true } },
-    ),
+    col
+      .participants()
+      .createIndex(
+        { hackathonId: 1, updatedAt: -1, _id: -1 },
+        { name: 'board_people', partialFilterExpression: { lookingForTeam: true } },
+      ),
+    col
+      .participants()
+      .createIndex(
+        { hackathonId: 1, skills: 1, updatedAt: -1, _id: -1 },
+        { name: 'board_people_by_skill', partialFilterExpression: { lookingForTeam: true } },
+      ),
 
     // INVARIANT: a user appears in at most one team per hackathon.
     // A unique multikey index has one entry per (hackathonId, member), so a second team
     // containing the same user cannot be written - by a join, a create, or a bug.
-    col.teams().createIndex(
-      { hackathonId: 1, 'members.userId': 1 },
-      { unique: true, name: INDEX.memberPerHackathon },
-    ),
     col
       .teams()
-      .createIndex({ hackathonId: 1, nameKey: 1 }, { unique: true, name: INDEX.teamName }),
+      .createIndex(
+        { hackathonId: 1, 'members.userId': 1 },
+        { unique: true, name: INDEX.memberPerHackathon },
+      ),
+    col.teams().createIndex({ hackathonId: 1, nameKey: 1 }, { unique: true, name: INDEX.teamName }),
     // Teams board: a full team drops out of this index the moment its last seat is taken.
-    col.teams().createIndex(
-      { hackathonId: 1, updatedAt: -1, _id: -1 },
-      { name: 'board_teams', partialFilterExpression: { openSeats: { $gt: 0 } } },
-    ),
-    col.teams().createIndex(
-      { hackathonId: 1, lookingFor: 1, updatedAt: -1, _id: -1 },
-      { name: 'board_teams_by_skill', partialFilterExpression: { openSeats: { $gt: 0 } } },
-    ),
+    col
+      .teams()
+      .createIndex(
+        { hackathonId: 1, updatedAt: -1, _id: -1 },
+        { name: 'board_teams', partialFilterExpression: { openSeats: { $gt: 0 } } },
+      ),
+    col
+      .teams()
+      .createIndex(
+        { hackathonId: 1, lookingFor: 1, updatedAt: -1, _id: -1 },
+        { name: 'board_teams_by_skill', partialFilterExpression: { openSeats: { $gt: 0 } } },
+      ),
 
     col.invites().createIndex({ codeHash: 1 }, { unique: true, name: INDEX.inviteCode }),
     col.invites().createIndex({ teamId: 1, expiresAt: -1 }),
@@ -129,12 +138,18 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * `work` must therefore be safe to run more than once and must only talk to the database
  * through the session it is given.
  *
+ * Retrying is bounded by config.txnDeadlineMs. The case that needs it: a server instance is
+ * killed in the middle of a transaction. MongoDB rolls that transaction back, but only when
+ * its lifetime limit expires (60 s by default), and until then the documents it touched
+ * reject other writers. Those writers get a 503 they can retry instead of a hung request.
+ *
  * @template T
  * @param {(session: import('mongodb').ClientSession) => Promise<T>} work
  * @returns {Promise<T>}
  */
 export async function withTransaction(work) {
   const session = client.startSession();
+  const startedAt = Date.now();
   let attempt = 0;
   try {
     return await session.withTransaction(
@@ -142,6 +157,7 @@ export async function withTransaction(work) {
         attempt += 1;
         if (attempt > 1) {
           metrics.txnRetries.inc();
+          if (Date.now() - startedAt > config.txnDeadlineMs) throw errors.busy();
           // Jittered backoff so 49 losers do not all retry in the same millisecond.
           await sleep(Math.random() * Math.min(5 * 2 ** attempt, 100));
         }

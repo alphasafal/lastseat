@@ -51,7 +51,13 @@ export function createApp() {
       const seconds = Number(process.hrtime.bigint() - started) / 1e9;
       const route = req.route ? `${req.baseUrl}${req.route.path}` : 'unmatched';
       metrics.httpDuration.observe({ method: req.method, route, status: res.statusCode }, seconds);
-      logger.debug({ id: req.id, method: req.method, url: req.originalUrl, status: res.statusCode, ms: Math.round(seconds * 1000) });
+      logger.debug({
+        id: req.id,
+        method: req.method,
+        url: req.originalUrl,
+        status: res.statusCode,
+        ms: Math.round(seconds * 1000),
+      });
     });
     next();
   });
@@ -97,12 +103,12 @@ export function createApp() {
   return app;
 }
 
-// eslint-disable-next-line no-unused-vars -- Express identifies error handlers by their four arguments.
+// Express recognizes an error handler by its four parameters, so `_next` has to stay.
 function errorHandler(err, req, res, _next) {
   if (res.headersSent) return res.destroy();
 
   if (err instanceof AppError) {
-    if (err.status === 429 && err.details?.retryAfterSec) {
+    if (err.details?.retryAfterSec) {
       res.set('Retry-After', String(err.details.retryAfterSec));
     }
     return res
