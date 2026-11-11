@@ -1,4 +1,4 @@
-// The only shapes that ever leave the server. Nothing is serialised straight from a
+// The only shapes that ever leave the server. Nothing is serialized straight from a
 // database document, so adding a private field to a collection can never leak it.
 
 export function teamStatus(team) {

@@ -94,7 +94,7 @@ export const schemas = {
 
   inviteJoin: z
     .object({
-      // Accept what a human types: lower case, spaces, dashes. Normalised before hashing.
+      // Accept what a human types: lower case, spaces, dashes. Normalized before hashing.
       code: z
         .string()
         .max(40)

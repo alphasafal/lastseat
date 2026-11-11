@@ -82,9 +82,7 @@ async function claimSeat(session, { teamId, participant, at, requireLeaderId }) 
 
   let team;
   try {
-    team = await col
-      .teams()
-      .findOneAndUpdate(filter, update, { session, returnDocument: 'after' });
+    team = await col.teams().findOneAndUpdate(filter, update, { session, returnDocument: 'after' });
   } catch (err) {
     if (isDuplicateKey(err, INDEX.memberPerHackathon)) {
       throw requireLeaderId ? errors.subjectAlreadyInTeam() : errors.alreadyInTeam();
@@ -107,11 +105,13 @@ async function claimSeat(session, { teamId, participant, at, requireLeaderId }) 
 async function afterJoin(session, { team, participant, actor, via, at, exceptRequestId }) {
   failpoint('after-seat-claim');
 
-  const person = await col.participants().findOneAndUpdate(
-    { _id: participant._id },
-    { $set: { teamId: team._id, lookingForTeam: false, updatedAt: at } },
-    { session, returnDocument: 'after' },
-  );
+  const person = await col
+    .participants()
+    .findOneAndUpdate(
+      { _id: participant._id },
+      { $set: { teamId: team._id, lookingForTeam: false, updatedAt: at } },
+      { session, returnDocument: 'after' },
+    );
 
   // Joining a team withdraws the person's requests to every other team.
   const stale = await col
@@ -127,11 +127,13 @@ async function afterJoin(session, { team, participant, actor, via, at, exceptReq
     )
     .toArray();
   if (stale.length > 0) {
-    await col.joinRequests().updateMany(
-      { _id: { $in: stale.map((request) => request._id) }, status: 'pending' },
-      { $set: { status: 'cancelled', reason: 'joined_a_team', decidedAt: at } },
-      { session },
-    );
+    await col
+      .joinRequests()
+      .updateMany(
+        { _id: { $in: stale.map((request) => request._id) }, status: 'pending' },
+        { $set: { status: 'cancelled', reason: 'joined_a_team', decidedAt: at } },
+        { session },
+      );
   }
 
   const joiner = { userId: participant.userId, name: participant.name };
@@ -204,16 +206,20 @@ export async function createTeam(session, { hackathon, actor, input }) {
 }
 
 async function afterCreate(session, { team, participant, actor, at }) {
-  const person = await col.participants().findOneAndUpdate(
-    { _id: participant._id },
-    { $set: { teamId: team._id, lookingForTeam: false, updatedAt: at } },
-    { session, returnDocument: 'after' },
-  );
-  const stale = await col.joinRequests().updateMany(
-    { hackathonId: team.hackathonId, userId: participant.userId, status: 'pending' },
-    { $set: { status: 'cancelled', reason: 'joined_a_team', decidedAt: at } },
-    { session },
-  );
+  const person = await col
+    .participants()
+    .findOneAndUpdate(
+      { _id: participant._id },
+      { $set: { teamId: team._id, lookingForTeam: false, updatedAt: at } },
+      { session, returnDocument: 'after' },
+    );
+  const stale = await col
+    .joinRequests()
+    .updateMany(
+      { hackathonId: team.hackathonId, userId: participant.userId, status: 'pending' },
+      { $set: { status: 'cancelled', reason: 'joined_a_team', decidedAt: at } },
+      { session },
+    );
   await writeAudit(
     session,
     auditEntry({
@@ -297,16 +303,20 @@ async function detachMember(session, { team, member, actor, type, at }) {
       .teams()
       .deleteOne({ _id: team._id, version: team.version }, { session });
     if (deleted.deletedCount !== 1) throw errors.conflict();
-    await col.invites().updateMany(
-      { teamId: team._id, revokedAt: null },
-      { $set: { revokedAt: at, purgeAt: new Date(at.getTime() + INVITE_RETENTION_MS) } },
-      { session },
-    );
-    await col.joinRequests().updateMany(
-      { teamId: team._id, status: 'pending' },
-      { $set: { status: 'cancelled', reason: 'team_deleted', decidedAt: at } },
-      { session },
-    );
+    await col
+      .invites()
+      .updateMany(
+        { teamId: team._id, revokedAt: null },
+        { $set: { revokedAt: at, purgeAt: new Date(at.getTime() + INVITE_RETENTION_MS) } },
+        { session },
+      );
+    await col
+      .joinRequests()
+      .updateMany(
+        { teamId: team._id, status: 'pending' },
+        { $set: { status: 'cancelled', reason: 'team_deleted', decidedAt: at } },
+        { session },
+      );
   } else {
     // Members are appended on join, so array order is join order.
     if (sameId(team.leaderId, member.userId)) nextLeader = remaining[0];
@@ -322,11 +332,13 @@ async function detachMember(session, { team, member, actor, type, at }) {
     if (!after) throw errors.conflict();
   }
 
-  const person = await col.participants().findOneAndUpdate(
-    { hackathonId: team.hackathonId, userId: member.userId },
-    { $set: { teamId: null, lookingForTeam: true, updatedAt: at } },
-    { session, returnDocument: 'after' },
-  );
+  const person = await col
+    .participants()
+    .findOneAndUpdate(
+      { hackathonId: team.hackathonId, userId: member.userId },
+      { $set: { teamId: null, lookingForTeam: true, updatedAt: at } },
+      { session, returnDocument: 'after' },
+    );
 
   const entries = [
     auditEntry({ ...base, type, subject, team: after, people: person ? [person] : [] }),
@@ -392,11 +404,13 @@ export async function removeMember(session, { actor, teamId, userId }) {
 export async function transferLeadership(session, { actor, teamId, userId }) {
   const at = new Date();
   // Leader check and membership check are part of the write, not a read before it.
-  const team = await col.teams().findOneAndUpdate(
-    { _id: teamId, leaderId: actor.userId, 'members.userId': userId },
-    { $set: { leaderId: userId, updatedAt: at }, $inc: { version: 1 } },
-    { session, returnDocument: 'after' },
-  );
+  const team = await col
+    .teams()
+    .findOneAndUpdate(
+      { _id: teamId, leaderId: actor.userId, 'members.userId': userId },
+      { $set: { leaderId: userId, updatedAt: at }, $inc: { version: 1 } },
+      { session, returnDocument: 'after' },
+    );
   if (!team) {
     const current = await col.teams().findOne({ _id: teamId }, { session });
     if (!current) throw errors.notFound('Team');
@@ -426,12 +440,14 @@ export async function transferLeadership(session, { actor, teamId, userId }) {
 
 export async function createInvite(session, { actor, teamId, input }) {
   const at = new Date();
-  // Touching the team serialises concurrent invite creation, which keeps the cap exact.
-  const team = await col.teams().findOneAndUpdate(
-    { _id: teamId, leaderId: actor.userId },
-    { $set: { lastInviteAt: at } },
-    { session, returnDocument: 'after' },
-  );
+  // Touching the team serializes concurrent invite creation, which keeps the cap exact.
+  const team = await col
+    .teams()
+    .findOneAndUpdate(
+      { _id: teamId, leaderId: actor.userId },
+      { $set: { lastInviteAt: at } },
+      { session, returnDocument: 'after' },
+    );
   if (!team) await explainLeaderMiss(session, teamId);
 
   const active = await col
@@ -550,11 +566,13 @@ export async function createJoinRequest(session, { actor, teamId, input }) {
 
   // Writing to the participant makes two of this user's requests conflict with each other
   // and with a join, so the "not in a team" and "max pending" checks below cannot be raced.
-  const participant = await col.participants().findOneAndUpdate(
-    { hackathonId: team.hackathonId, userId: actor.userId },
-    { $set: { lastRequestAt: at } },
-    { session, returnDocument: 'after' },
-  );
+  const participant = await col
+    .participants()
+    .findOneAndUpdate(
+      { hackathonId: team.hackathonId, userId: actor.userId },
+      { $set: { lastRequestAt: at } },
+      { session, returnDocument: 'after' },
+    );
   if (!participant) throw errors.notRegistered();
   if (participant.teamId) throw errors.alreadyInTeam();
   if (!team.acceptingRequests) throw errors.requestsClosed();
@@ -612,11 +630,13 @@ async function loadPendingRequest(session, requestId) {
 }
 
 async function decideRequest(session, request, status, actor, at) {
-  const decided = await col.joinRequests().findOneAndUpdate(
-    { _id: request._id, status: 'pending' },
-    { $set: { status, decidedAt: at, decidedBy: actor.userId } },
-    { session, returnDocument: 'after' },
-  );
+  const decided = await col
+    .joinRequests()
+    .findOneAndUpdate(
+      { _id: request._id, status: 'pending' },
+      { $set: { status, decidedAt: at, decidedBy: actor.userId } },
+      { session, returnDocument: 'after' },
+    );
   if (!decided) throw errors.requestNotPending();
   return decided;
 }
@@ -690,11 +710,13 @@ export async function cancelJoinRequest(session, { actor, requestId }) {
   if (!request || !sameId(request.userId, actor.userId)) throw errors.notFound('Join request');
   if (request.status !== 'pending') throw errors.requestNotPending();
 
-  const decided = await col.joinRequests().findOneAndUpdate(
-    { _id: requestId, status: 'pending' },
-    { $set: { status: 'cancelled', reason: 'withdrawn', decidedAt: at } },
-    { session, returnDocument: 'after' },
-  );
+  const decided = await col
+    .joinRequests()
+    .findOneAndUpdate(
+      { _id: requestId, status: 'pending' },
+      { $set: { status: 'cancelled', reason: 'withdrawn', decidedAt: at } },
+      { session, returnDocument: 'after' },
+    );
   if (!decided) throw errors.requestNotPending();
 
   await writeAudit(

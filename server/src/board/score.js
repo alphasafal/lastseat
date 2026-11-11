@@ -64,7 +64,8 @@ export function scoreCandidate(context, candidate, options) {
       weights.timezone * timezoneScore);
 
   const reasons = [];
-  if (bringsWanted.length > 0) reasons.push(`Brings ${list(bringsWanted)}, which you are looking for.`);
+  if (bringsWanted.length > 0)
+    reasons.push(`Brings ${list(bringsWanted)}, which you are looking for.`);
   const extra = newSkills.filter((skill) => !wantedSet.has(skill));
   if (extra.length > 0) reasons.push(`Adds ${list(extra)} - nobody on your side has that yet.`);
   if (newSkills.length === 0) reasons.push('Has the same skills you already cover.');
@@ -82,7 +83,11 @@ export function scoreCandidate(context, candidate, options) {
         weight: round(weights.complementary),
         skills: newSkills,
       },
-      timezone: { score: round(timezoneScore), weight: round(weights.timezone), overlapHours: hours },
+      timezone: {
+        score: round(timezoneScore),
+        weight: round(weights.timezone),
+        overlapHours: hours,
+      },
       sharedSkills: shared,
     },
     reasons,
@@ -92,7 +97,11 @@ export function scoreCandidate(context, candidate, options) {
 /** Scores every candidate and sorts best first. Ties keep the more recently active person first. */
 export function rankCandidates(context, candidates, options) {
   return candidates
-    .map((candidate, index) => ({ candidate, index, ...scoreCandidate(context, candidate, options) }))
+    .map((candidate, index) => ({
+      candidate,
+      index,
+      ...scoreCandidate(context, candidate, options),
+    }))
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map(({ index: _index, ...rest }) => rest);
 }

@@ -17,7 +17,10 @@ export async function checkInvariants(database, scope = {}) {
   const [teams, participants, pending, hackathons] = await Promise.all([
     database.collection('teams').find(filter).toArray(),
     database.collection('participants').find(filter).toArray(),
-    database.collection('join_requests').find({ ...filter, status: 'pending' }).toArray(),
+    database
+      .collection('join_requests')
+      .find({ ...filter, status: 'pending' })
+      .toArray(),
     database.collection('hackathons').find().toArray(),
   ]);
   const limits = new Map(hackathons.map((h) => [id(h._id), h]));

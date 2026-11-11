@@ -38,7 +38,10 @@ async function countingSeatClaim(via, run) {
 teamsRouter.post('/hackathons/:hackathonId/participants', async (req, res) => {
   const hackathon = await getHackathon(idParam(req, 'hackathonId'));
   const user = await loadUser(req);
-  send(res, await mutate(req, (session) => service.registerParticipant(session, { hackathon, user })));
+  send(
+    res,
+    await mutate(req, (session) => service.registerParticipant(session, { hackathon, user })),
+  );
 });
 
 teamsRouter.get('/hackathons/:hackathonId/me', async (req, res) => {
@@ -91,7 +94,10 @@ teamsRouter.patch('/teams/:teamId', async (req, res) => {
 
 teamsRouter.post('/teams/:teamId/leave', async (req, res) => {
   const teamId = idParam(req, 'teamId');
-  send(res, await mutate(req, (session) => service.leaveTeam(session, { actor: actorOf(req), teamId })));
+  send(
+    res,
+    await mutate(req, (session) => service.leaveTeam(session, { actor: actorOf(req), teamId })),
+  );
 });
 
 teamsRouter.delete('/teams/:teamId/members/:userId', async (req, res) => {
@@ -168,9 +174,7 @@ teamsRouter.post('/invites/join', async (req, res) => {
   const { code } = parse(schemas.inviteJoin, req.body);
   const user = await loadUser(req);
   const result = await countingSeatClaim('invite', () =>
-    mutate(req, (session) =>
-      service.joinWithInvite(session, { actor: actorOf(req), user, code }),
-    ),
+    mutate(req, (session) => service.joinWithInvite(session, { actor: actorOf(req), user, code })),
   );
   send(res, result);
 });
@@ -248,7 +252,7 @@ teamsRouter.get('/teams/:teamId/audit', async (req, res) => {
   const { before, limit } = parse(schemas.auditQuery, req.query);
 
   // Current members can read their team's history. Once the team is deleted nobody is a
-  // member any more, so its log is reachable only through the organiser endpoint below.
+  // member any more, so its log is reachable only through the organizer endpoint below.
   const isMember = await col
     .teams()
     .countDocuments({ _id: teamId, 'members.userId': req.auth.userId }, { limit: 1 });
@@ -268,7 +272,7 @@ teamsRouter.get('/hackathons/:hackathonId/audit', async (req, res) => {
   const hackathonId = idParam(req, 'hackathonId');
   const { before, limit } = parse(schemas.auditQuery, req.query);
   const user = await loadUser(req);
-  if (user.role !== 'organizer') throw errors.forbidden('Only organisers can read the full log.');
+  if (user.role !== 'organizer') throw errors.forbidden('Only organizers can read the full log.');
 
   const filter = { hackathonId, ...(before ? { _id: { $lt: toObjectId(before) } } : {}) };
   const entries = await col
