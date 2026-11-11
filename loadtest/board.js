@@ -6,7 +6,9 @@
 //
 // Prerequisite: `npm run seed` (10,000 users, 2,000 teams). Each virtual user signs in as a
 // different seeded account, so sessions, cookies and per-user rate limits behave as in real use.
+// Start the server with RATE_AUTH_PER_IP=100000: all virtual users share one IP address.
 
+import exec from 'k6/execution';
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
@@ -81,17 +83,23 @@ function login(n) {
 }
 
 export function setup() {
-  // Readers use the first accounts; writers use accounts from the end of the seed, which
-  // are the ones not yet in a team.
-  const readers = [];
-  for (let i = 1; i <= READERS; i += 1) readers.push(login(i));
-  const writers = [];
-  for (let i = 0; i < WRITERS; i += 1) writers.push(login(10000 - i));
-
-  const list = http.get(`${BASE_URL}/api/hackathons`, { headers: { Cookie: readers[0] } });
+  const list = http.get(`${BASE_URL}/api/hackathons`, { headers: { Cookie: login(1) } });
   const hackathon = list.json('hackathons').find((h) => h.slug === 'winter-build-2026');
   if (!hackathon) throw new Error('seeded hackathon not found: run `npm run seed` first');
-  return { readers, writers, hackathonId: hackathon.id };
+  return { hackathonId: hackathon.id };
+}
+
+// Each virtual user signs in once, as its own seeded account. The account number comes from
+// the VU's test-wide id, so two VUs can never share an account (which would make them undo
+// each other's work). Readers count up from user 1; writers count down from user 10,000,
+// where the seed leaves people without a team.
+let session = null;
+function signedIn(role) {
+  if (!session) {
+    const id = exec.vu.idInTest;
+    session = login(role === 'writer' ? 10001 - id : id);
+  }
+  return session;
 }
 
 function think(min, max) {
@@ -112,7 +120,7 @@ function getBoard(path, cookie, name) {
 
 // What a person does on the board: open it, scroll a page or two, switch to people, filter.
 export function browseBoard(data) {
-  const cookie = data.readers[(__VU - 1) % data.readers.length];
+  const cookie = signedIn('reader');
   const base = `/api/hackathons/${data.hackathonId}/board`;
 
   group('teams', () => {
@@ -165,7 +173,7 @@ function write(method, path, body, cookie, name) {
 
 // A writer forms a team, edits it, mints an invite, then dissolves it by leaving.
 export function churnTeams(data) {
-  const cookie = data.writers[(__VU - 1) % data.writers.length];
+  const cookie = signedIn('writer');
   const created = write(
     'POST',
     `/api/hackathons/${data.hackathonId}/teams`,
