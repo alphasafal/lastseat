@@ -239,7 +239,11 @@ async function openStream(url, cookie) {
         };
         const timer = setTimeout(() => {
           waiters.splice(waiters.indexOf(check), 1);
-          reject(new Error(`no matching event within ${timeoutMs} ms; saw ${events.map((e) => e.data?.type ?? e.event).join(', ')}`));
+          reject(
+            new Error(
+              `no matching event within ${timeoutMs} ms; saw ${events.map((e) => e.data?.type ?? e.event).join(', ')}`,
+            ),
+          );
         }, timeoutMs);
         if (!check()) waiters.push(check);
       });
