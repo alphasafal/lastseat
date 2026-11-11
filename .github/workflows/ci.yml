@@ -44,7 +44,7 @@ jobs:
           npm run db:init -w server
 
       - name: API tests (includes the 50-way race test)
-        run: npm test -w server -- --test-reporter=spec
+        run: npm test -w server
 
       - name: MongoDB logs
         if: failure()
