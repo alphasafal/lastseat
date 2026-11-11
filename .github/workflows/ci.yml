@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
+      MONGODB_URI: mongodb://127.0.0.1:27017/?directConnection=true
 
     steps:
       - uses: actions/checkout@v4

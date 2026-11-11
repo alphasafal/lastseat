@@ -1,0 +1,54 @@
+# One command for the whole stack:
+#
+#   docker compose up --build
+#
+# Starts MongoDB as a one-node replica set, seeds 10,000 users and 2,000 teams on the first
+# run, and serves the app at http://localhost:4000.
+
+services:
+  mongo:
+    image: mongo:8
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # Transactions and change streams need a replica set. The first probe initiates it;
+      # later probes report healthy once this node is primary.
+      test: >
+        mongosh --quiet --eval "
+        try { rs.status() } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }) }
+        if (!db.hello().isWritablePrimary) quit(1)"
+      interval: 3s
+      timeout: 10s
+      retries: 30
+      start_period: 5s
+
+  seed:
+    build: .
+    command: ['node', 'server/scripts/seed.js']
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/lastseat?replicaSet=rs0
+      NODE_ENV: development
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  app:
+    build: .
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/lastseat?replicaSet=rs0
+      PORT: 4000
+      # Plain http://localhost: a Secure cookie would not be sent by every browser.
+      COOKIE_SECURE: 'false'
+    ports:
+      - '4000:4000'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+
+volumes:
+  mongo-data:

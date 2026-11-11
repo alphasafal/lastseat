@@ -1,0 +1,21 @@
+# Render blueprint: New > Blueprint > pick this repository. Free tier.
+# The only value you must supply is MONGODB_URI (a MongoDB Atlas free cluster works).
+services:
+  - type: web
+    name: lastseat
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      # Render terminates TLS in front of the app; trust one proxy hop for the client IP.
+      - key: TRUST_PROXY
+        value: 1
+      - key: MONGODB_URI
+        sync: false

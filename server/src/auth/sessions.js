@@ -58,7 +58,7 @@ export function setSessionCookie(res, token) {
   res.cookie(config.session.cookieName, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: config.env === 'production',
+    secure: config.session.secureCookie,
     maxAge: config.session.ttlMs,
     path: '/',
   });

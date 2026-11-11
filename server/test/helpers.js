@@ -10,7 +10,7 @@ process.env.NODE_ENV = 'test';
 // which are what stop invite-code guessing, stay at their production values.
 process.env.RATE_INVITE_PER_IP ??= '1000000';
 process.env.RATE_AUTH_PER_IP ??= '1000000';
-const BASE_URI = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/?replicaSet=rs0';
+const BASE_URI = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/?directConnection=true';
 
 export async function startTestServer() {
   const dbName = `lastseat_test_${randomBytes(5).toString('hex')}`;

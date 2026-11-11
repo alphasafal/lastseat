@@ -13,7 +13,7 @@ function int(name, fallback) {
 export const config = {
   env: env.NODE_ENV ?? 'development',
   port: int('PORT', 4000),
-  mongoUri: env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/lastseat?replicaSet=rs0',
+  mongoUri: env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/lastseat?directConnection=true',
   trustProxy: int('TRUST_PROXY', 0),
   metricsToken: env.METRICS_TOKEN ?? '',
   logLevel: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : 'info'),
@@ -25,6 +25,9 @@ export const config = {
   session: {
     cookieName: 'sid',
     ttlMs: 7 * 24 * 60 * 60 * 1000,
+    // Secure cookies are only sent over HTTPS. On by default in production; Docker Compose
+    // turns it off because it serves plain http://localhost.
+    secureCookie: (env.COOKIE_SECURE ?? String(env.NODE_ENV === 'production')) === 'true',
     // How long a verified session is trusted without asking the database again.
     cacheMs: int('SESSION_CACHE_MS', 10_000),
   },

@@ -9,7 +9,7 @@
 
 import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/lastseat?replicaSet=rs0';
+const uri = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/lastseat?directConnection=true';
 const CONTENDERS = Number(process.argv[2] ?? 50);
 const ROUNDS = Number(process.argv[3] ?? 20);
 

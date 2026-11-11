@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+web/dist
+.git
+.github
+.env
+docs
+loadtest/results
+e2e
