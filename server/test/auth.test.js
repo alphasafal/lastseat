@@ -128,3 +128,17 @@ describe('authentication', () => {
     assert.deepEqual(statuses.slice(10), [429, 429]);
   });
 });
+
+describe('session probe', () => {
+  test('GET /api/auth/session answers 200 with the user or null, never an error', async () => {
+    const out = await anon.get('/api/auth/session');
+    assert.equal(out.status, 200);
+    assert.equal(out.body.user, null);
+
+    const user = await ctx.user({ name: 'Probe' });
+    const signedIn = await user.get('/api/auth/session');
+    assert.equal(signedIn.status, 200);
+    assert.equal(signedIn.body.user.name, 'Probe');
+    assert.equal(signedIn.body.user.passwordHash, undefined);
+  });
+});

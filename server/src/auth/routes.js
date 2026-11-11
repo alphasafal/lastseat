@@ -92,6 +92,13 @@ authRouter.post('/logout', async (req, res) => {
   res.status(204).end();
 });
 
+// Used by the web app on load: "am I signed in?" is a question, so the answer is 200 either
+// way. /me below is the strict variant that fails with 401.
+authRouter.get('/session', async (req, res) => {
+  const user = req.auth ? await col.users().findOne({ _id: req.auth.userId }) : null;
+  res.json({ user: user ? userView(user) : null });
+});
+
 authRouter.get('/me', requireAuth, async (req, res) => {
   const user = await col.users().findOne({ _id: req.auth.userId });
   if (!user) throw errors.unauthenticated();
