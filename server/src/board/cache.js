@@ -53,9 +53,26 @@ export function cachedPage(hackathonId, key, produce) {
   return body;
 }
 
-/** Called for every committed change in a hackathon, before the event is sent to clients. */
-export function invalidateBoard(hackathonId) {
-  byHackathon.get(String(hackathonId))?.clear();
+/**
+ * Called for every committed change, before the event is sent to clients.
+ *
+ * Only the pages the change can affect are dropped: a change that carries a team snapshot (or
+ * deletes a team) empties the team pages, one that carries people empties the people pages.
+ * Invites and join requests are not on the board, so they leave the cache alone.
+ *
+ * @param {{hackathonId: unknown, type: string, team?: object, people?: object[]}} entry
+ */
+export function invalidateBoard(entry) {
+  const entries = byHackathon.get(String(entry.hackathonId));
+  if (!entries) return;
+  const teams = Boolean(entry.team) || entry.type === 'team.deleted';
+  const people = Boolean(entry.people?.length);
+  if (!teams && !people) return;
+  for (const key of entries.keys()) {
+    if ((teams && key.startsWith('teams|')) || (people && key.startsWith('people|'))) {
+      entries.delete(key);
+    }
+  }
 }
 
 export function invalidateAllBoards() {

@@ -68,7 +68,7 @@ export function frameFor(entry) {
 /** Delivers one committed audit entry to everyone allowed to see it. */
 export function publish(entry) {
   // First drop cached board pages for this hackathon: from here on, a fetch sees this change.
-  invalidateBoard(entry.hackathonId);
+  invalidateBoard(entry);
 
   const clients = byHackathon.get(String(entry.hackathonId));
   if (!clients) return;

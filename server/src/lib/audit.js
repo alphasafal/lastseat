@@ -59,5 +59,5 @@ export async function writeAudit(session, entries) {
   await col.audit().insertMany(list, { session });
   // Read-your-writes on this instance: the person who made the change sees it on their very
   // next board fetch, without waiting for the change stream to deliver the event.
-  onCommit(session, () => invalidateBoard(list[0].hackathonId));
+  onCommit(session, () => list.forEach(invalidateBoard));
 }
