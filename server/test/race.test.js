@@ -72,8 +72,14 @@ describe('race conditions', () => {
       contenders.map((user) => user.post('/api/invites/join', { code: invite.code })),
     );
 
-    assert.equal(count(results, (res) => res.status === 200), 3);
-    assert.equal(count(results, (res) => res.body?.error?.code === 'TEAM_FULL'), 37);
+    assert.equal(
+      count(results, (res) => res.status === 200),
+      3,
+    );
+    assert.equal(
+      count(results, (res) => res.body?.error?.code === 'TEAM_FULL'),
+      37,
+    );
     assert.equal((await squad.fetch()).openSeats, 0);
     await ctx.assertInvariants();
   });
@@ -93,8 +99,14 @@ describe('race conditions', () => {
       requests.map((res) => squad.leader.post(`/api/requests/${res.body.request.id}/accept`)),
     );
 
-    assert.equal(count(results, (res) => res.status === 200), 1);
-    assert.equal(count(results, (res) => res.body?.error?.code === 'TEAM_FULL'), 9);
+    assert.equal(
+      count(results, (res) => res.status === 200),
+      1,
+    );
+    assert.equal(
+      count(results, (res) => res.body?.error?.code === 'TEAM_FULL'),
+      9,
+    );
     await ctx.assertInvariants();
   });
 
@@ -108,8 +120,15 @@ describe('race conditions', () => {
         user.post('/api/invites/join', { code: inviteA.code }),
         user.post('/api/invites/join', { code: inviteB.code }),
       ]);
-      assert.equal(count(results, (res) => res.status === 200), 1, `round ${round}`);
-      assert.equal(count(results, (res) => res.body?.error?.code === 'ALREADY_IN_TEAM'), 1);
+      assert.equal(
+        count(results, (res) => res.status === 200),
+        1,
+        `round ${round}`,
+      );
+      assert.equal(
+        count(results, (res) => res.body?.error?.code === 'ALREADY_IN_TEAM'),
+        1,
+      );
       // Free the seat for the next round.
       const joined = results.find((res) => res.status === 200).body.team.id;
       assert.equal((await user.post(`/api/teams/${joined}/leave`)).status, 200);
@@ -121,11 +140,19 @@ describe('race conditions', () => {
     const user = await ctx.participant(hackathon);
     const results = await Promise.all(
       Array.from({ length: 20 }, (_, i) =>
-        user.post(`/api/hackathons/${hackathon.id}/teams`, { name: `Burst ${randomUUID()}-${i}`.slice(0, 40) }),
+        user.post(`/api/hackathons/${hackathon.id}/teams`, {
+          name: `Burst ${randomUUID()}-${i}`.slice(0, 40),
+        }),
       ),
     );
-    assert.equal(count(results, (res) => res.status === 201), 1);
-    assert.equal(count(results, (res) => res.body?.error?.code === 'ALREADY_IN_TEAM'), 19);
+    assert.equal(
+      count(results, (res) => res.status === 201),
+      1,
+    );
+    assert.equal(
+      count(results, (res) => res.body?.error?.code === 'ALREADY_IN_TEAM'),
+      19,
+    );
     const owned = await ctx.col.teams().countDocuments({ 'members.userId': user._id });
     assert.equal(owned, 1);
     await ctx.assertInvariants();
@@ -138,8 +165,14 @@ describe('race conditions', () => {
         user.post(`/api/hackathons/${hackathon.id}/teams`, { name: 'The Only Ones' }),
       ),
     );
-    assert.equal(count(results, (res) => res.status === 201), 1);
-    assert.equal(count(results, (res) => res.body?.error?.code === 'TEAM_NAME_TAKEN'), 29);
+    assert.equal(
+      count(results, (res) => res.status === 201),
+      1,
+    );
+    assert.equal(
+      count(results, (res) => res.body?.error?.code === 'TEAM_NAME_TAKEN'),
+      29,
+    );
     await ctx.assertInvariants();
   });
 
