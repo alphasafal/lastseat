@@ -7,7 +7,7 @@ export default [
   { ignores: ['**/node_modules/**', '**/dist/**', 'loadtest/results/**'] },
   js.configs.recommended,
   {
-    files: ['server/**/*.js', '*.js'],
+    files: ['server/**/*.js', 'loadtest/live-latency.js', '*.js'],
     languageOptions: { ecmaVersion: 2024, sourceType: 'module', globals: globals.node },
     rules: {
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
@@ -17,8 +17,8 @@ export default [
     },
   },
   {
-    // k6 scripts run in k6's own JavaScript runtime, not Node.
-    files: ['loadtest/**/*.js'],
+    // The k6 script runs in k6's own JavaScript runtime, not Node.
+    files: ['loadtest/board.js'],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: 'module',
