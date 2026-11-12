@@ -60,3 +60,29 @@ jobs:
         run: |
           tail -n 100 server.log || true
           docker logs mongo | tail -n 200
+
+  compose:
+    name: Docker Compose from scratch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the stack with the one command from the README
+        run: docker compose up --build -d
+
+      - name: Wait for the app
+        run: timeout 240 bash -c 'until curl -sf http://127.0.0.1:4000/healthz > /dev/null; do sleep 2; done'
+
+      - name: Run the 50-way race on it
+        run: |
+          curl -sf -X POST http://127.0.0.1:4000/api/lab/race -H 'content-type: application/json' -d '{}' -o race.json
+          python3 -c "import json; r = json.load(open('race.json')); print(r['durationMs'], 'ms', r['retries'], 'retries'); assert r['passed'] and r['joined'] == 1 and r['teamFull'] == 49, r"
+
+      - name: Check every data invariant on the seeded database
+        run: docker compose exec -T app node server/scripts/verify-invariants.js
+
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --tail 200
