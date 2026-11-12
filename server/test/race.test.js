@@ -61,6 +61,39 @@ describe('race conditions', () => {
     await ctx.assertInvariants();
   });
 
+  test('300 people take the last seat in the same second: still exactly one', async () => {
+    const squad = await ctx.team(hackathon);
+    const { invite } = await ctx.fillTeam(hackathon, squad, 1);
+    const contenders = [];
+    for (let batch = 0; batch < 6; batch += 1) {
+      contenders.push(
+        ...(await Promise.all(Array.from({ length: 50 }, () => ctx.participant(hackathon)))),
+      );
+    }
+
+    const results = await Promise.all(
+      contenders.map((user) => user.post('/api/invites/join', { code: invite.code })),
+    );
+
+    assert.equal(
+      count(results, (res) => res.status === 200),
+      1,
+    );
+    assert.equal(
+      count(results, (res) => res.status === 409 && res.body.error.code === 'TEAM_FULL'),
+      299,
+      'nobody got an error, a timeout or a second seat',
+    );
+    const team = await squad.fetch();
+    assert.equal(team.memberCount, 4);
+    assert.equal(team.openSeats, 0);
+    const seated = await ctx.col
+      .participants()
+      .countDocuments({ teamId: new ctx.ObjectId(squad.id) });
+    assert.equal(seated, 4);
+    await ctx.assertInvariants();
+  });
+
   test('3 open seats, 40 contenders: exactly three get in', async () => {
     const squad = await ctx.team(hackathon);
     const invite = await squad.invite();
