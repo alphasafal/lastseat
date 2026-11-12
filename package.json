@@ -19,7 +19,7 @@
     "test": "npm test -w server",
     "test:race": "npm run test:race -w server",
     "test:chaos": "npm run test:chaos -w server",
-    "seed": "npm run seed -w server",
+    "seed": "npm run seed -w server --",
     "verify": "npm run verify -w server",
     "lint": "eslint .",
     "format": "prettier --write .",
