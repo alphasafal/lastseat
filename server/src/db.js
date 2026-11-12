@@ -26,7 +26,10 @@ export async function connect(uri = config.mongoUri) {
     serverSelectionTimeoutMS: 10_000,
   });
   await client.connect();
-  database = client.db();
+  // A connection string without a database name (hosted providers often hand those out)
+  // would silently use "test"; fall back to a database named after the app instead.
+  const named = /^mongodb(?:\+srv)?:\/\/[^/]+\/[^?]+/.test(uri);
+  database = named ? client.db() : client.db('lastseat');
   return database;
 }
 
