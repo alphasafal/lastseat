@@ -22,7 +22,13 @@ export function useLiveStream({ hackathonId, teamId, onEvent, onReady }) {
     const query = new URLSearchParams({ hackathonId, ...(teamId ? { teamId } : {}) });
     const source = new EventSource(`/api/stream?${query}`);
 
+    // A stream that drops usually reconnects within a couple of seconds, so the indicator
+    // only changes if it stays down.
+    let downTimer = null;
+
     source.addEventListener('ready', () => {
+      clearTimeout(downTimer);
+      downTimer = null;
       setStatus('live');
       handlers.current.onReady?.();
     });
@@ -31,9 +37,14 @@ export function useLiveStream({ hackathonId, teamId, onEvent, onReady }) {
     });
     // The server asks for a full refetch when it could not replay missed events.
     source.addEventListener('resync', () => handlers.current.onReady?.());
-    source.onerror = () => setStatus('reconnecting');
+    source.onerror = () => {
+      downTimer ??= setTimeout(() => setStatus('reconnecting'), 4000);
+    };
 
-    return () => source.close();
+    return () => {
+      clearTimeout(downTimer);
+      source.close();
+    };
   }, [hackathonId, teamId]);
 
   return status;
