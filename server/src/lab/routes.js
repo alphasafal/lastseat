@@ -169,9 +169,10 @@ labRouter.post('/race', async (req, res) => {
       );
     }
 
-    // Open one connection per contender before the clock starts. Otherwise the first run on
-    // a cold pool would mostly measure TLS handshakes instead of the contention.
-    await Promise.all(racers.map(() => db().command({ ping: 1 })));
+    // Fill the connection pool before the clock starts. Otherwise the first run on a cold
+    // pool would mostly measure TLS handshakes instead of the contention.
+    const connections = Math.min(contenders, config.mongoMaxPool);
+    await Promise.all(Array.from({ length: connections }, () => db().command({ ping: 1 })));
 
     // The race. Every contender starts in the same tick of the event loop.
     const startedAt = performance.now();
