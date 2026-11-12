@@ -47,7 +47,7 @@ docker compose up --build
 This starts MongoDB as a one-node replica set, seeds 10,000 users and 2,000 teams, and
 serves the app at <http://localhost:4000>.
 
-Without Docker you need Node 20.11+ and a MongoDB 6+ started with `--replSet rs0`
+Without Docker you need Node 22 and a MongoDB 6+ started with `--replSet rs0`
 (transactions and change streams need a replica set; one node is enough):
 
 ```bash
