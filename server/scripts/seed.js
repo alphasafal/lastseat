@@ -184,6 +184,39 @@ const HEADLINES = [
   '',
 ];
 
+// What the seeded teams say they are building. Picked by position, not with the PRNG, so
+// adding an idea does not change who ends up in which team.
+const IDEAS = [
+  'Offline-first field notes that sync when the signal comes back.',
+  'A bus tracker for towns the big map apps ignore.',
+  'Voice notes turned into a shared shopping list.',
+  'A study timer that pairs you with someone in your time zone.',
+  'Receipts in, monthly budget out.',
+  'Flood alerts by SMS for places without smartphones.',
+  'A plant-watering reminder that reads the weather forecast.',
+  'Open-source sign language flashcards.',
+  'A queue display for small clinics.',
+  'Split the hostel electricity bill without a spreadsheet.',
+  'Find a free classroom on campus right now.',
+  'A map of working water refill points.',
+  'Pothole reports with photo proof, sent to the right office.',
+  'Borrow tools from neighbours instead of buying them.',
+  'A typing game for learning a new script.',
+  'Carbon labels for canteen meals.',
+  'A changelog generator for student projects.',
+  'Lost and found for the whole campus.',
+  'A tiny weather station on a microcontroller.',
+  'Homework help that works over 2G.',
+  'Local recipes, searchable by what is in the kitchen.',
+  'A timetable that warns about clashing exams.',
+  'Braille labels from a phone camera and a label printer.',
+  'A second-hand textbook exchange for one campus.',
+];
+
+// Bump when the generated data changes. A database seeded by an older version is reseeded
+// on the next run, which is how a hosted demo picks the change up at its next build.
+const SEED_VERSION = 2;
+
 async function insertInBatches(collection, docs, size = 2000) {
   for (let i = 0; i < docs.length; i += size) {
     await collection.insertMany(docs.slice(i, i + size), { ordered: false });
@@ -213,12 +246,15 @@ async function main() {
   }
 
   const already = await col.users().countDocuments({ seeded: true });
-  if (already > 0 && !args.reset) {
+  const outdated = already > 0 && hackathon.seedVersion !== SEED_VERSION;
+  if (already > 0 && !args.reset && !outdated) {
     console.log(`Found ${already} seeded users. Run with --reset to replace them.`);
     await disconnect();
     return;
   }
-  if (args.reset) {
+  if (outdated && !args.reset)
+    console.log('The seed data has changed since this database was seeded.');
+  if (args.reset || outdated) {
     const seededIds = await col.users().distinct('_id', { seeded: true });
     const scope = { hackathonId: hackathon._id };
     await Promise.all([
@@ -310,7 +346,7 @@ async function main() {
       hackathonId: hackathon._id,
       name,
       nameKey: name.toLowerCase(),
-      description: 'Seeded team for load testing.',
+      description: IDEAS[t % IDEAS.length],
       lookingFor:
         size < 4
           ? sample(
@@ -356,6 +392,7 @@ async function main() {
   await insertInBatches(col.participants(), participants);
   await insertInBatches(col.teams(), teams);
   await insertInBatches(col.audit(), audit);
+  await col.hackathons().updateOne({ _id: hackathon._id }, { $set: { seedVersion: SEED_VERSION } });
 
   const report = await checkInvariants(db(), { hackathonId: hackathon._id });
   console.log(
