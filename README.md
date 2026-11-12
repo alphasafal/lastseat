@@ -104,7 +104,7 @@ lets all 50 people into the last seat in every round; the conditional update let
 | Every input validated                        | strict zod schemas for bodies, queries and ids ([`validate.js`](server/src/lib/validate.js))         | `teams.test.js` "ids, bodies and unknown fields" |
 | Audit log: who, what, when                   | `audit_log`, written in the same transaction as the change                                           | `audit.test.js`                                  |
 | Teammate suggestions with explained scoring  | pure functions in [`board/score.js`](server/src/board/score.js)                                      | `suggestions.test.js`                            |
-| At least 20 API tests in CI                  | 91 tests, GitHub Actions                                                                             | [`ci.yml`](.github/workflows/ci.yml)             |
+| At least 20 API tests in CI                  | 94 tests, GitHub Actions                                                                             | [`ci.yml`](.github/workflows/ci.yml)             |
 | Seed 10,000 users and 2,000 teams            | [`scripts/seed.js`](server/scripts/seed.js)                                                          | `npm run seed`                                   |
 | Load test, p95 under 200 ms at 100 users     | k6, [`loadtest/board.js`](loadtest/board.js)                                                         | [report](docs/LOAD_TEST_REPORT.md)               |
 | React UI, phone and keyboard only            | [`web/`](web/src)                                                                                    | `e2e/flow.mjs`                                   |
@@ -118,7 +118,7 @@ race lab, and a dark theme that follows the system setting.
 ## Tests
 
 ```bash
-npm test             # 91 tests against a real MongoDB, about 45 s
+npm test             # 94 tests against a real MongoDB, about 45 s
 npm run test:race    # only the concurrency tests
 npm run test:chaos   # SIGKILL the server mid-join, check nothing is corrupted
 npm run verify       # check every data invariant against the current database
@@ -180,19 +180,23 @@ The live demo runs on Vercel (Hobby) with a MongoDB Atlas free cluster.
 3. Set the environment variables below and deploy. The build seeds the database (10,000 users,
    2,000 teams) the first time and skips it afterwards.
 
-| Variable            | Value                                                                        |
-| ------------------- | ---------------------------------------------------------------------------- |
-| `MONGODB_URI`       | the Atlas connection string, with `/lastseat` as the database name           |
-| `TRUST_PROXY`       | `1`, so rate limits see the visitor's address                                |
-| `MONGO_MAX_POOL`    | `10`, because serverless instances multiply                                  |
-| `SSE_MAX_STREAM_MS` | `280000`, to end event streams just before the 300 s request limit           |
-| `TXN_DEADLINE_MS`   | `25000`, because a free Atlas cluster is limited to 100 operations a second  |
-| `LAB_NOTE`          | optional: a sentence shown under race results (the demo explains that limit) |
+| Variable                   | Value                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| `MONGODB_URI`              | the Atlas connection string, with `/lastseat` as the database name                 |
+| `TRUST_PROXY`              | `1`, so rate limits see the visitor's address                                      |
+| `MONGO_MAX_POOL`           | `10`, because serverless instances multiply                                        |
+| `SSE_MAX_STREAM_MS`        | `280000`, to end event streams just before the 300 s request limit                 |
+| `TXN_DEADLINE_MS`          | `25000`, because a free Atlas cluster is limited to 100 operations a second        |
+| `LAB_NOTE`                 | optional: a sentence shown under race results (the demo explains that limit)       |
+| `RECONNECT_AFTER_PAUSE_MS` | `15000`, because Vercel freezes idle instances and their database sockets go stale |
 
 On Vercel the React app is served as static files and the whole API is one function
 ([`api/index.js`](api/index.js)) on the same origin, so cookies are first-party and there is no
 CORS configuration. An instance stays alive while it has an event stream open and tails its
-own change stream, so live updates work without any extra service.
+own change stream, so live updates work without any extra service. An idle instance is
+frozen rather than stopped, which leaves it holding dead database sockets when it wakes;
+[`suspension.js`](server/src/suspension.js) notices the gap and reconnects before the first
+request is served.
 
 The same code runs as one long-lived process anywhere Node runs: `npm run build && npm start`
 serves the UI and the API from Express. [`render.yaml`](render.yaml) and the
