@@ -3,6 +3,7 @@ import { connect, ensureIndexes } from './db.js';
 import { ensureDefaultHackathon } from './hackathons.js';
 import { logger } from './lib/logger.js';
 import { startChangeStream } from './realtime/changeStream.js';
+import { watchForPauses } from './suspension.js';
 
 /**
  * Connects to MongoDB, makes sure the indexes and the demo hackathon exist, starts the change
@@ -24,6 +25,7 @@ export async function boot() {
   await step('indexesMs', ensureIndexes);
   await step('hackathonMs', ensureDefaultHackathon);
   await step('changeStreamMs', startChangeStream);
+  watchForPauses();
   const app = createApp();
 
   logger.info({ ...timings, totalMs: Math.round(performance.now() - startedAt) }, 'booted');

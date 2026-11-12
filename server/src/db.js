@@ -7,6 +7,7 @@ import { metrics } from './lib/metrics.js';
 let client;
 /** @type {import('mongodb').Db} */
 let database;
+let connectedTo;
 
 export const INDEX = {
   memberPerHackathon: 'uniq_member_per_hackathon',
@@ -18,6 +19,7 @@ export const INDEX = {
 };
 
 export async function connect(uri = config.mongoUri) {
+  connectedTo = uri;
   client = new MongoClient(uri, {
     maxPoolSize: config.mongoMaxPool,
     // The driver opens two connections at a time by default. A burst on a cold pool (50
@@ -39,6 +41,18 @@ export async function connect(uri = config.mongoUri) {
 
 export async function disconnect() {
   await client?.close();
+}
+
+/**
+ * Replaces the client with a fresh one. Used after the process was suspended (see
+ * suspension.js): the old client's sockets may be dead, and one that is dead without knowing
+ * it makes the next operation hang.
+ */
+export async function reconnect() {
+  const previous = client;
+  await connect(connectedTo);
+  // Not awaited: closing politely means talking to the server over those same sockets.
+  previous?.close(true).catch(() => {});
 }
 
 export const db = () => database;

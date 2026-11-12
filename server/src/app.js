@@ -17,6 +17,7 @@ import { metrics, registry } from './lib/metrics.js';
 import { memoryLimiter } from './lib/rateLimit.js';
 import { clientCount } from './realtime/hub.js';
 import { realtimeRouter } from './realtime/routes.js';
+import { afterPause } from './suspension.js';
 import { teamsRouter } from './teams/routes.js';
 
 const WEB_DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
@@ -26,6 +27,9 @@ export function createApp() {
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxy);
   app.set('etag', false);
+
+  // Before anything touches the database: see suspension.js.
+  app.use(afterPause);
 
   app.use(
     helmet({

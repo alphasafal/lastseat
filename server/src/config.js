@@ -18,6 +18,9 @@ export const config = {
   // Connections per server instance. Keep it small on serverless, where instances multiply.
   mongoMaxPool: int('MONGO_MAX_POOL', 100),
   metricsToken: env.METRICS_TOKEN ?? '',
+  // Serverless hosts suspend the process between requests. After a pause longer than this the
+  // database connections are replaced before the next request is served. 0 = never.
+  reconnectAfterPauseMs: int('RECONNECT_AFTER_PAUSE_MS', 0),
   logLevel: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : 'info'),
 
   // A transaction that keeps losing races gives up after this long and the client is told
