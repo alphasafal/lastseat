@@ -98,6 +98,23 @@ function useThrottled(fn, ms) {
   }, [fn, ms, state]);
 }
 
+/** Rows in the shape of the real ones, so the page does not jump when the data arrives. */
+function Placeholders({ noun }) {
+  return (
+    <div className="rows" role="status" aria-label={`Loading ${noun}`}>
+      {Array.from({ length: 6 }, (_, index) => (
+        <div key={index} className="skeleton-row" aria-hidden="true">
+          <span className="skeleton skeleton-seats" />
+          <span className="skeleton-lines">
+            <span className="skeleton" style={{ width: `${55 - (index % 3) * 10}%` }} />
+            <span className="skeleton" style={{ width: `${85 - (index % 2) * 15}%` }} />
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ListFooter({ list, noun }) {
   if (list.error) {
     return (
@@ -109,8 +126,7 @@ function ListFooter({ list, noun }) {
       </p>
     );
   }
-  if (list.loading && list.items.length === 0)
-    return <p className="page-status">Loading {noun}…</p>;
+  if (list.loading && list.items.length === 0) return <Placeholders noun={noun} />;
   if (!list.nextCursor) return null;
   return (
     <button type="button" className="button button-quiet button-wide" onClick={list.loadMore}>
