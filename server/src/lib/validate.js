@@ -133,6 +133,13 @@ export const schemas = {
     })
     .strict(),
 
+  labRace: z
+    .object({
+      contenders: z.number().int().min(2).max(100).default(50),
+      seats: z.number().int().min(1).max(3).default(1),
+    })
+    .strict(),
+
   streamQuery: z.object({ hackathonId: objectId, teamId: objectId.optional() }).strict(),
 };
 

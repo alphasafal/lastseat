@@ -11,6 +11,7 @@ import { boardRouter } from './board/routes.js';
 import { config } from './config.js';
 import { db } from './db.js';
 import { AppError } from './lib/errors.js';
+import { labRouter } from './lab/routes.js';
 import { logger } from './lib/logger.js';
 import { metrics, registry } from './lib/metrics.js';
 import { memoryLimiter } from './lib/rateLimit.js';
@@ -79,6 +80,8 @@ export function createApp() {
   app.use('/api', requireSameOrigin, loadSession);
 
   app.use('/api/auth', authRouter);
+  // Public on purpose: anyone can run the race against the live database (rate limited).
+  app.use('/api/lab', labRouter);
 
   const api = express.Router();
   api.use(requireAuth);

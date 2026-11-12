@@ -1,5 +1,5 @@
 import { col, toObjectId } from './db.js';
-import { errors } from './lib/errors.js';
+import { errors, isDuplicateKey } from './lib/errors.js';
 
 // Team-size rules change rarely and are read on every request, so they are cached briefly.
 const CACHE_MS = 30_000;
@@ -16,7 +16,49 @@ export async function getHackathon(id) {
 }
 
 export async function listHackathons() {
-  return col.hackathons().find().sort({ startsAt: 1 }).limit(50).toArray();
+  return col
+    .hackathons()
+    .find({ hidden: { $ne: true } })
+    .sort({ startsAt: 1 })
+    .limit(50)
+    .toArray();
+}
+
+const LAB_SLUG = 'race-lab';
+
+/**
+ * The hidden hackathon the race lab runs in. It never shows up in listings, so lab runs
+ * cannot touch a real board. Created on first use.
+ */
+export async function getLabHackathon() {
+  const hit = cache.get(LAB_SLUG);
+  if (hit) return hit.doc;
+  const fields = {
+    slug: LAB_SLUG,
+    name: 'Race lab',
+    tagline: '',
+    hidden: true,
+    minTeamSize: 2,
+    maxTeamSize: 4,
+    startsAt: new Date(),
+    createdAt: new Date(),
+  };
+  let doc;
+  try {
+    doc = await col
+      .hackathons()
+      .findOneAndUpdate(
+        { slug: LAB_SLUG },
+        { $setOnInsert: fields },
+        { upsert: true, returnDocument: 'after' },
+      );
+  } catch (err) {
+    // Two first-ever runs at once: the other one created it.
+    if (!isDuplicateKey(err)) throw err;
+    doc = await col.hackathons().findOne({ slug: LAB_SLUG });
+  }
+  cache.set(LAB_SLUG, { doc, until: Infinity });
+  return doc;
 }
 
 /** Creates the demo hackathon on first boot so a fresh deployment is usable immediately. */
