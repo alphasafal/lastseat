@@ -46,6 +46,17 @@ jobs:
       - name: API tests (includes the 50-way race test)
         run: npm test -w server
 
-      - name: MongoDB logs
+      # The UI in a real browser against a running server: the race lab, the whole team flow by
+      # keyboard only, live updates between three people, a phone-sized screen.
+      - name: Browser flow
+        run: |
+          npm run seed -- --users 500 --teams 100
+          npm start > server.log 2>&1 &
+          timeout 60 bash -c 'until curl -sf http://127.0.0.1:4000/healthz > /dev/null; do sleep 1; done'
+          npm run e2e
+
+      - name: Server and MongoDB logs
         if: failure()
-        run: docker logs mongo | tail -n 200
+        run: |
+          tail -n 100 server.log || true
+          docker logs mongo | tail -n 200
