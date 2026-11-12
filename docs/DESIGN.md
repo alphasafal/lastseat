@@ -46,7 +46,7 @@ not a check before it. Leave and remove write with the `version` they read.
 **Counted limits** (5 pending requests, 5 active codes) first write to one shared document,
 which makes concurrent attempts conflict and therefore run one after another.
 
-**Proof.** `race.test.js` fires real concurrent HTTP requests: 50 for one seat, 40 for three,
+**Proof.** `race.test.js` fires real concurrent HTTP requests: 50 and then 300 for one seat, 40 for three,
 10 parallel accepts, one person into two teams, 20 simultaneous creates, last member leaving
 against 20 joins, and a mixed storm. After each it runs an invariant checker over the whole
 database. `chaos.test.js` kills the server between the claim and the commit. The live site

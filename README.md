@@ -95,7 +95,7 @@ lets all 50 people into the last seat in every round; the conditional update let
 | Leadership passes on when the leader leaves  | `detachMember` in `service.js` (longest-standing member)                                             | `teams.test.js`                                  |
 | Last member leaving deletes the team         | `detachMember`, also closes invites and requests                                                     | `teams.test.js`, `race.test.js`                  |
 | Join requests the leader accepts or declines | `join_requests`, same atomic claim on accept                                                         | `requests.test.js`                               |
-| Race-proof: 50 people, one seat, one winner  | conditional update + unique index + transaction                                                      | `race.test.js` (8 tests), live race lab          |
+| Race-proof: 50 people, one seat, one winner  | conditional update + unique index + transaction                                                      | `race.test.js` (9 tests), live race lab          |
 | Idempotent retries                           | `Idempotency-Key` stored in the same transaction ([`idempotency.js`](server/src/lib/idempotency.js)) | `idempotency.test.js`                            |
 | Real-time board and team pages               | SSE fed by a change stream on the audit log ([`realtime/`](server/src/realtime))                     | `realtime.test.js`, `e2e/flow.mjs`               |
 | Authentication                               | scrypt passwords, hashed session tokens, httpOnly SameSite cookie, Origin check                      | `auth.test.js`                                   |
@@ -104,11 +104,11 @@ lets all 50 people into the last seat in every round; the conditional update let
 | Every input validated                        | strict zod schemas for bodies, queries and ids ([`validate.js`](server/src/lib/validate.js))         | `teams.test.js` "ids, bodies and unknown fields" |
 | Audit log: who, what, when                   | `audit_log`, written in the same transaction as the change                                           | `audit.test.js`                                  |
 | Teammate suggestions with explained scoring  | pure functions in [`board/score.js`](server/src/board/score.js)                                      | `suggestions.test.js`                            |
-| At least 20 API tests in CI                  | 94 tests, GitHub Actions                                                                             | [`ci.yml`](.github/workflows/ci.yml)             |
+| At least 20 API tests in CI                  | 95 tests, GitHub Actions                                                                             | [`ci.yml`](.github/workflows/ci.yml)             |
 | Seed 10,000 users and 2,000 teams            | [`scripts/seed.js`](server/scripts/seed.js)                                                          | `npm run seed`                                   |
 | Load test, p95 under 200 ms at 100 users     | k6, [`loadtest/board.js`](loadtest/board.js)                                                         | [report](docs/LOAD_TEST_REPORT.md)               |
 | React UI, phone and keyboard only            | [`web/`](web/src)                                                                                    | `e2e/flow.mjs`                                   |
-| Deployed on a free tier                      | Render + MongoDB Atlas ([`render.yaml`](render.yaml))                                                | live demo link above                             |
+| Deployed on a free tier                      | Vercel + MongoDB Atlas ([`vercel.json`](vercel.json), [`api/index.js`](api/index.js))                | live demo link above                             |
 
 Bonus items: optimistic UI with rollback on conflict (`web/src/pages/Team.jsx`, checked in
 `e2e/flow.mjs`), Docker Compose, Prometheus metrics at `/metrics`, and a chaos test that kills
@@ -118,7 +118,7 @@ race lab, and a dark theme that follows the system setting.
 ## Tests
 
 ```bash
-npm test             # 94 tests against a real MongoDB, about 45 s
+npm test             # 95 tests against a real MongoDB, about 45 s
 npm run test:race    # only the concurrency tests
 npm run test:chaos   # SIGKILL the server mid-join, check nothing is corrupted
 npm run verify       # check every data invariant against the current database
