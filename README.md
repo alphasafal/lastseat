@@ -9,7 +9,7 @@ Built for the Hack4Hack Crew Hiring Challenge 2026, problem statement 1.
 
 - **Live demo:** https://lastseat-mu.vercel.app. Press "Run the race" on the first screen: no
   account needed. Then "Try a demo account" for the product itself.
-- **Design doc (1 page):** [docs/DESIGN.md](docs/DESIGN.md)
+- **Design doc (1 page):** [docs/DESIGN.md](docs/DESIGN.md), or as a [PDF](docs/DESIGN.pdf)
 - **Load-test report:** [docs/LOAD_TEST_REPORT.md](docs/LOAD_TEST_REPORT.md)
 
 Stack: React 19 + Vite, Node.js 22 + Express 5, MongoDB 8 (official driver). No Redis, no
@@ -130,6 +130,11 @@ database and talks to it over HTTP. `npm run verify` runs the same invariant che
 race and chaos tests use: member counts, seat counts, one team per person, board rows and an
 audit log that adds up to the current membership.
 
+CI ([`ci.yml`](.github/workflows/ci.yml)) runs all of it on every push: lint, the 95 API tests
+including the race and chaos tests, then the browser flow against a running server. A second
+job starts the stack from scratch with `docker compose up --build`, runs the 50-way race on
+it and checks every invariant on the seeded data.
+
 ## Load test
 
 ```bash
@@ -233,5 +238,4 @@ Stated plainly, because they are the first things I would fix:
 - The hosted demo's database is a free cluster limited to 100 operations a second. The
   50-way race takes 4 to 5 s there and about 0.3 s without the limit; the outcome is the same.
   Section 5 of the [load-test report](docs/LOAD_TEST_REPORT.md) has the measurements.
-- The browser flow in `e2e/` runs locally but is not part of CI yet.
 - A person's name cannot be changed after sign-up.
