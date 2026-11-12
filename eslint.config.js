@@ -7,7 +7,7 @@ export default [
   { ignores: ['**/node_modules/**', '**/dist/**', 'loadtest/results/**'] },
   js.configs.recommended,
   {
-    files: ['server/**/*.js', 'loadtest/live-latency.js', '*.js'],
+    files: ['server/**/*.js', 'loadtest/live-latency.js', 'loadtest/throttle-proxy.js', '*.js'],
     languageOptions: { ecmaVersion: 2024, sourceType: 'module', globals: globals.node },
     rules: {
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
