@@ -1021,6 +1021,7 @@ input[aria-invalid='true'] {
 
 .role-you {
   background: var(--paper);
+  color: var(--ink);
   border: 1px solid var(--line);
 }
 
