@@ -23,9 +23,10 @@ Two things to keep in mind when reading the numbers:
 - The three processes share two cores, so the load generator competes with the system under
   test. This makes the saturation numbers pessimistic.
 - Loopback has no network latency. A deployed instance adds the round trip to the user and to
-  the database. I have not load tested the free-tier deployment: it has 0.1 vCPU and sleeps
-  when idle, so it would measure the hosting plan rather than the design. The command to run
-  it against any URL is at the end.
+  the database. I have not run k6 against the hosted demo (Vercel Hobby with a free MongoDB
+  Atlas cluster): Atlas limits a free cluster to 100 operations a second, so the result would
+  describe the hosting plan rather than the design. What that limit does to the 50-way race is
+  measured in section 5. The command to run k6 against any URL is at the end.
 
 Rate limits: the per-user API limit (600 requests per minute) and the invite and login limits
 were left at their defaults for the steady run. `RATE_AUTH_PER_IP` was raised because all
@@ -97,6 +98,39 @@ arrival on the stream. That covers the transaction, the change-stream hop and th
 | ------- | -------------------------- | ------ | ----- | ----- | ------ |
 | 300     | 596,400 of 596,400 (100 %) | 17 ms  | 34 ms | 55 ms | 112 ms |
 
+## 5. The 50-way race on a rate-limited database
+
+The race lab (`POST /api/lab/race`, the button on the landing page) times 50 simultaneous
+joins for one seat. On the machine above it takes about 0.3 s. On the hosted demo the first
+version took 7.4 s, close enough to the 8 s transaction deadline that a slower run could have
+ended in `503 BUSY` instead of `TEAM_FULL`.
+
+The cause was not contention. A free Atlas cluster accepts about 100 operations a second, and
+the run sent about 740: each of the 49 losers made three attempts of five operations each.
+The third attempt was pure waste. A retry only helps after the winner has committed, the
+winner's own operations were queued behind everyone else's, and the backoff (at most 100 ms)
+was tuned for a database that answers in a millisecond.
+
+Two changes followed. Redeeming a code no longer loads the hackathon for someone who is
+already registered, which removed one operation per attempt (hosted: 6.0 to 6.4 s). And the
+wait before a retry is now as long as the failed attempt took (`retryDelayMs` in
+[`db.js`](../server/src/db.js)), so it adapts to how fast the database is.
+
+To measure the second change without deploying,
+[`loadtest/throttle-proxy.js`](../loadtest/throttle-proxy.js) puts the same limit in front of
+a local mongod. It reproduced the hosted numbers before the change and predicted them after:
+
+| 50 joins, 1 seat                        | Local, no limit          | Local, 100 ops/s proxy   | Hosted demo                 |
+| --------------------------------------- | ------------------------ | ------------------------ | --------------------------- |
+| Backoff of at most 250 ms               | 0.3 s, 64-88 retries     | 6.6 to 6.8 s, 98 retries | 6.0 to 6.4 s, 98 retries    |
+| Wait as long as the failed attempt took | 0.3 to 0.4 s, 49 retries | 5.0 to 5.1 s, 49 retries | 3.6 to 5.0 s, 51-76 retries |
+
+49 retries is the floor: 49 requests have to lose once before they can be told the team is
+full. What remains on the hosted demo is the limit itself (about 400 operations at 100 a
+second). The result of every run, before and after, was the same: one join, 49 `TEAM_FULL`,
+all six stored-data checks passing. The hosted demo also raises the deadline to 25 s
+(`TXN_DEADLINE_MS`), so a slow run is slow instead of wrong.
+
 ## What the load test changed
 
 The first version of the board had no cache. I ran the saturation scenario early and it
@@ -144,4 +178,9 @@ node loadtest/live-latency.js                              # section 4
 
 # against a deployed instance (seed it first):
 k6 run -e BASE_URL=https://your-app.example loadtest/board.js
+
+# section 5: the same server behind a database limited to 100 operations a second
+node loadtest/throttle-proxy.js &
+MONGODB_URI='mongodb://127.0.0.1:27018/lastseat?directConnection=true' PORT=4001 npm start
+curl -X POST localhost:4001/api/lab/race -H 'content-type: application/json' -d '{}'
 ```

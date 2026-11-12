@@ -33,7 +33,8 @@ team containing the same person cannot be written, by a join, by a create or by 
 **Everything else that belongs to a join** (the participant row, withdrawing the person's
 other requests, the audit entry, the idempotency record) is written in the same transaction
 as the claim. Losers of a race get a write conflict, roll back and run again against the new
-state.
+state. Before retrying they wait about as long as the failed attempt took, so each loser needs
+one retry whether the database answers in a millisecond or is rate-limited.
 
 **Retries.** A write may carry an `Idempotency-Key`. Its result is stored in the same
 transaction as the change, so a retry or a double click replays the first response. Joining
