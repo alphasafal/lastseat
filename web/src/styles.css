@@ -1422,6 +1422,10 @@ input[aria-invalid='true'] {
   font-weight: 700;
 }
 
+.checks-pending {
+  color: var(--muted);
+}
+
 .check-ok .check-mark {
   color: var(--teal);
 }

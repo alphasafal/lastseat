@@ -85,8 +85,13 @@ const step = (name) => console.log(`ok - ${name}`);
 try {
   // --- The race lab on the landing page, without an account ------------------------------
   const visitor = await person();
+  assert.equal(
+    await visitor.$$eval('.checks-pending li', (items) => items.length),
+    6,
+    'the six checks are listed before the first run',
+  );
   await clickText(visitor, 'Run the race');
-  await visitor.waitForSelector('.checks', { timeout: 30_000 });
+  await visitor.waitForSelector('.check-ok', { timeout: 30_000 });
   assert.equal(await visitor.$$eval('.check-ok', (items) => items.length), 6);
   assert.equal(await visitor.$$eval('.check-bad', (items) => items.length), 0);
   assert.equal(await visitor.$$eval('.dot-won', (dots) => dots.length), 1);

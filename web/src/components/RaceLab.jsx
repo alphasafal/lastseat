@@ -138,9 +138,38 @@ export default function RaceLab() {
           </p>
         )}
         {phase === 'racing' && <p className="race-wait">Waiting for the database to decide…</p>}
+        {!run && !error && <Pending seats={seats} />}
         {phase === 'done' && run && <Outcome run={run} winners={winners} />}
       </div>
     </div>
+  );
+}
+
+/** Before the first result: what a run is going to be checked against. */
+function Pending({ seats }) {
+  const losers = CONTENDERS - seats;
+  const claims = [
+    `Exactly ${seats} of ${CONTENDERS} requests succeed`,
+    `The other ${losers} are all told the team is full`,
+    `The stored team has ${TEAM_SIZE} members and nobody twice`,
+    'The people in the stored team are the ones whose requests succeeded',
+    'Open seats is 0, and nobody else is recorded as a member anywhere',
+    'The audit log holds exactly one entry per join',
+  ];
+  return (
+    <>
+      <p className="race-meta">Every run is checked against what the database stored:</p>
+      <ul className="checks checks-pending">
+        {claims.map((claim) => (
+          <li key={claim}>
+            <span className="check-mark" aria-hidden="true">
+              ○
+            </span>
+            {claim}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
