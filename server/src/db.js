@@ -20,6 +20,10 @@ export const INDEX = {
 export async function connect(uri = config.mongoUri) {
   client = new MongoClient(uri, {
     maxPoolSize: config.mongoMaxPool,
+    // The driver opens two connections at a time by default. A burst on a cold pool (50
+    // people redeeming one code just after a deploy) would queue behind 25 rounds of TLS
+    // handshakes, so let the pool grow faster.
+    maxConnecting: 8,
     // Majority writes + snapshot reads are what make a committed join survive a crash.
     writeConcern: { w: 'majority' },
     retryWrites: true,
@@ -163,8 +167,10 @@ export async function withTransaction(work) {
         if (attempt > 1) {
           metrics.txnRetries.inc();
           if (Date.now() - startedAt > config.txnDeadlineMs) throw errors.busy();
-          // Jittered backoff so 49 losers do not all retry in the same millisecond.
-          await sleep(Math.random() * Math.min(5 * 2 ** attempt, 100));
+          // Jittered backoff so 49 losers do not all retry in the same millisecond. A retry
+          // that arrives before the winner has committed only conflicts again, so the wait
+          // grows quickly: up to 40 ms, 80 ms, 160 ms, then 250 ms.
+          await sleep(Math.random() * Math.min(10 * 2 ** attempt, 250));
         }
         return work(session);
       },

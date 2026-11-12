@@ -535,8 +535,16 @@ export async function joinWithInvite(session, { actor, user, code }) {
     );
   if (!invite) throw errors.inviteInvalid();
 
-  const hackathon = await col.hackathons().findOne({ _id: invite.hackathonId }, { session });
-  const participant = await ensureParticipant(session, { hackathon, user, at });
+  // Nearly everyone who redeems a code is already registered, so look for their record first
+  // and load the hackathon only when one has to be created. Under contention every retry
+  // repeats these reads, so one read fewer is paid back 49 times over.
+  let participant = await col
+    .participants()
+    .findOne({ hackathonId: invite.hackathonId, userId: user._id }, { session });
+  if (!participant) {
+    const hackathon = await col.hackathons().findOne({ _id: invite.hackathonId }, { session });
+    participant = await ensureParticipant(session, { hackathon, user, at });
+  }
 
   const { team, alreadyMember } = await claimSeat(session, {
     teamId: invite.teamId,
