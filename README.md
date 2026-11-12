@@ -216,10 +216,11 @@ server/src/lib/               idempotency, audit, validation, rate limits, invar
 server/src/realtime/          change stream -> hub -> SSE
 server/src/board/             board queries, page cache, suggestion scoring
 server/src/lab/               the public race lab
+server/src/suspension.js      reconnects after a serverless host froze the process
 api/index.js                  serverless entry (Vercel); server/src/index.js is the long-running one
 server/test/                  API, race and chaos tests
 web/src/                      React app
-loadtest/                     k6 script, SSE latency probe, results
+loadtest/                     k6 script, SSE latency probe, rate-limit proxy, results
 e2e/flow.mjs                  browser flow: race lab, live updates, keyboard only, rollback
 ```
 
