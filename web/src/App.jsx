@@ -16,6 +16,7 @@ import { useSession } from './lib/session.jsx';
 import Board from './pages/Board.jsx';
 import JoinByLink from './pages/JoinByLink.jsx';
 import Landing from './pages/Landing.jsx';
+import Race from './pages/Race.jsx';
 import Team from './pages/Team.jsx';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={user ? <Home /> : <Landing />} />
       <Route path="/join/:code" element={user ? <JoinByLink /> : <Landing />} />
+      <Route path="/race" element={<Race />} />
       <Route element={user ? <HackathonShell /> : <RequireSignIn />}>
         <Route path="/h/:hackathonId" element={<Board />} />
         <Route path="/h/:hackathonId/teams/:teamId" element={<Team />} />
@@ -107,6 +109,9 @@ function Shell() {
         <span className="topbar-hackathon">{hackathon?.name}</span>
         <LiveBadge status={status} />
         <nav className="topbar-nav" aria-label="Account">
+          <Link to="/race" className="topbar-link">
+            Race lab
+          </Link>
           {myTeam && (
             <Link to={`/h/${hackathonId}/teams/${myTeam.id}`} className="topbar-team">
               My team

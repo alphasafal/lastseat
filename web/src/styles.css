@@ -14,6 +14,12 @@
   --marigold-wash: #fff3cf;
   --teal: #0b7a6e;
   --red: #b42318;
+  --amber: #8a5a00;
+  /* Text colors for the three solid fills. */
+  --on-ink: #ffffff;
+  --on-marigold: #16203a;
+  --on-red: #ffffff;
+  color-scheme: light dark;
 
   --font-display: 'Bricolage Grotesque Variable', 'Atkinson Hyperlegible Next Variable', sans-serif;
   --font-body: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
@@ -27,6 +33,25 @@
 
   --radius: 10px;
   --seat-radius: 9px 9px 4px 4px;
+}
+
+/* Dark theme: the same roles, re-valued. Ink becomes the light color, so solid ink fills
+   (seats, primary buttons) turn light and their text turns dark. Marigold stays marigold. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #eef1f8;
+    --ink-soft: #c6cee0;
+    --paper: #0e1422;
+    --card: #171f32;
+    --line: #2d3955;
+    --muted: #9ba7c2;
+    --marigold-wash: #33290a;
+    --teal: #45cdbb;
+    --red: #ff8f80;
+    --amber: #ffcf66;
+    --on-ink: #0e1422;
+    --on-red: #0e1422;
+  }
 }
 
 *,
@@ -113,7 +138,7 @@ main:focus {
   top: -4rem;
   z-index: 20;
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
   padding: 0.6rem 1rem;
   border-radius: var(--radius);
 }
@@ -144,7 +169,7 @@ main:focus {
 
 .seat-taken {
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
 }
 
 /* The leader's seat carries a marigold headrest. */
@@ -218,7 +243,7 @@ main:focus {
 
 .button-primary {
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
 }
 
 .button-primary:hover:not(:disabled) {
@@ -227,7 +252,7 @@ main:focus {
 
 .button-accent {
   background: var(--marigold);
-  color: var(--ink);
+  color: var(--on-marigold);
 }
 
 .button-accent:hover:not(:disabled) {
@@ -252,7 +277,7 @@ main:focus {
 
 .button-danger:hover {
   background: var(--red);
-  color: #fff;
+  color: var(--on-red);
 }
 
 .button-wide {
@@ -357,7 +382,7 @@ input[aria-invalid='true'] {
 .chip-match {
   border-color: var(--ink);
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
 }
 
 .chip-picker {
@@ -389,7 +414,7 @@ input[aria-invalid='true'] {
 .chip-toggle input:checked + span {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
 }
 
 .chip-toggle input:disabled + span {
@@ -476,7 +501,8 @@ input[aria-invalid='true'] {
   color: var(--muted);
 }
 
-.topbar-team {
+.topbar-team,
+.topbar-link {
   font-weight: 650;
 }
 
@@ -578,7 +604,7 @@ input[aria-invalid='true'] {
 
 .tab[aria-selected='true'] {
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
 }
 
 .tab-count {
@@ -707,7 +733,7 @@ input[aria-invalid='true'] {
 }
 
 .status-forming {
-  color: #8a5a00;
+  color: var(--amber);
 }
 
 .status-ready {
@@ -988,6 +1014,7 @@ input[aria-invalid='true'] {
   padding: 0.05rem 0.5rem;
   border-radius: 4px;
   background: var(--marigold);
+  color: var(--on-marigold);
   font-size: 0.78rem;
   font-weight: 650;
 }
@@ -1151,12 +1178,13 @@ input[aria-invalid='true'] {
   padding: 0.75rem 0.6rem 0.75rem 1rem;
   border-radius: var(--radius);
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
   pointer-events: auto;
 }
 
 .toast-error {
   background: var(--red);
+  color: var(--on-red);
 }
 
 .toast-close {
@@ -1174,63 +1202,35 @@ input[aria-invalid='true'] {
 /* --- Landing ---------------------------------------------------------------------------- */
 
 .landing {
-  min-height: 100dvh;
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(20rem, 26rem);
-  gap: clamp(2rem, 6vw, 5rem);
-  align-items: center;
   max-width: 74rem;
   margin: 0 auto;
   padding: clamp(1.25rem, 4vw, 3rem);
 }
 
+.landing-hero {
+  min-height: min(calc(100dvh - 6rem), 56rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(20rem, 25rem);
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: center;
+}
+
 .landing-pitch {
   display: grid;
-  gap: 1.75rem;
+  gap: 1.4rem;
 }
 
 .landing-pitch h1 {
-  font-size: clamp(var(--step-3), 6.2vw, 4.6rem);
+  font-size: clamp(2.3rem, 5.2vw, 4rem);
   font-weight: 750;
   letter-spacing: -0.035em;
-  line-height: 0.98;
-  max-width: 13ch;
-}
-
-.hero-seats {
-  display: flex;
-  gap: clamp(0.5rem, 1.4vw, 1rem);
-}
-
-.hero-seats .seat {
-  width: clamp(3.6rem, 9vw, 6.5rem);
-  height: clamp(4.2rem, 10.5vw, 7.6rem);
-  border-radius: 20px 20px 8px 8px;
-  font-size: clamp(1.1rem, 2.6vw, 1.9rem);
-}
-
-.hero-seats .seat-open {
-  border-width: 3px;
-}
-
-/* The single piece of ambient motion on the page: the open seat asks to be taken. */
-@keyframes beacon {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgb(255 183 3 / 0.55);
-  }
-  60% {
-    box-shadow: 0 0 0 1.1rem rgb(255 183 3 / 0);
-  }
-}
-
-.seat-beacon {
-  animation: beacon 2.2s ease-out infinite;
+  line-height: 1;
+  max-width: 15ch;
 }
 
 .landing-lede {
-  font-size: 1.15rem;
-  max-width: 52ch;
+  font-size: 1.1rem;
+  max-width: 54ch;
   color: var(--ink-soft);
 }
 
@@ -1252,6 +1252,291 @@ input[aria-invalid='true'] {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--line);
+}
+
+/* --- Race lab --------------------------------------------------------------------------- */
+
+.race {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.hero-seats {
+  display: flex;
+  gap: clamp(0.5rem, 1.2vw, 0.9rem);
+}
+
+.hero-seats .seat {
+  width: clamp(3.2rem, 7vw, 5rem);
+  height: clamp(3.8rem, 8.2vw, 5.9rem);
+  border-radius: 16px 16px 7px 7px;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+}
+
+.hero-seats .seat-leader {
+  box-shadow: inset 0 8px 0 var(--marigold);
+}
+
+.hero-seats .seat-open {
+  border-width: 3px;
+}
+
+/* The open seat asks to be taken. This and the crowd below are the page's only ambient motion. */
+@keyframes beacon {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(255 183 3 / 0.55);
+  }
+  60% {
+    box-shadow: 0 0 0 1rem rgb(255 183 3 / 0);
+  }
+}
+
+.seat-beacon {
+  animation: beacon 2.2s ease-out infinite;
+}
+
+.hero-seats .seat-won {
+  outline: 3px solid var(--marigold);
+  outline-offset: 3px;
+  animation: seat-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.race-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  flex-wrap: wrap;
+}
+
+.race-go {
+  min-width: 9.5rem;
+  font-size: 1.05rem;
+}
+
+.race-seats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--step--1);
+  white-space: nowrap;
+}
+
+.race-seats select {
+  width: auto;
+  min-height: 2.75rem;
+}
+
+.race-note {
+  flex: 1 1 14rem;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+/* Fifty contenders, two rows of twenty-five. */
+.crowd {
+  display: grid;
+  grid-template-columns: repeat(25, minmax(0, 1fr));
+  gap: clamp(3px, 0.55vw, 7px);
+  max-width: 38rem;
+}
+
+.dot {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0.5;
+  transition:
+    background 160ms,
+    opacity 160ms,
+    transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+@keyframes reach {
+  50% {
+    transform: translateY(-35%);
+    opacity: 0.95;
+  }
+}
+
+.crowd-racing .dot-waiting,
+.crowd-revealing .dot-waiting {
+  animation: reach 520ms ease-in-out infinite;
+}
+
+.dot-full {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  opacity: 1;
+}
+
+.dot-won {
+  background: var(--marigold);
+  opacity: 1;
+  transform: scale(1.45);
+  box-shadow: 0 0 0 3px var(--ink);
+}
+
+.dot-error {
+  background: var(--red);
+  opacity: 1;
+}
+
+.race-result {
+  min-height: 12.5rem;
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+}
+
+.race-wait,
+.race-meta {
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+.race-sentence {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 650;
+  line-height: 1.25;
+  max-width: 34ch;
+}
+
+.checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+  font-size: var(--step--1);
+}
+
+.checks li {
+  display: grid;
+  grid-template-columns: 1.3rem minmax(0, 1fr);
+}
+
+.check-mark {
+  font-weight: 700;
+}
+
+.check-ok .check-mark {
+  color: var(--teal);
+}
+
+.check-bad {
+  color: var(--red);
+  font-weight: 650;
+}
+
+.race-page {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 50rem;
+}
+
+/* --- How it works ----------------------------------------------------------------------- */
+
+.how {
+  margin-top: clamp(2.5rem, 6vw, 4.5rem);
+  padding-top: clamp(1.75rem, 4vw, 2.75rem);
+  border-top: 2px solid var(--ink);
+  display: grid;
+  gap: 1.5rem;
+}
+
+.how h2 {
+  font-size: var(--step-2);
+}
+
+.how-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.race-page .how-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.code {
+  margin: 0;
+  padding: 1.25rem;
+  border-radius: var(--radius);
+  background: #16203a;
+  color: #e6ebf7;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.86rem;
+  line-height: 1.65;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+}
+
+.how-points {
+  margin: 0;
+  display: grid;
+  gap: 1.1rem;
+}
+
+.how-points dt {
+  font-family: var(--font-display);
+  font-weight: 650;
+  font-size: 1.1rem;
+}
+
+.how-points dd {
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+  max-width: 56ch;
+}
+
+.how-links {
+  display: flex;
+  gap: 0.5rem 1.5rem;
+  flex-wrap: wrap;
+  font-weight: 650;
+}
+
+/* --- Loading placeholders --------------------------------------------------------------- */
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  gap: 1.1rem;
+  padding: 1rem 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+.skeleton-row:first-child {
+  border-top: 0;
+}
+
+.skeleton {
+  display: block;
+  height: 0.9rem;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--line) 25%, var(--paper) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.skeleton-seats {
+  height: 2.6rem;
+  border-radius: var(--seat-radius);
+}
+
+.skeleton-lines {
+  display: grid;
+  gap: 0.6rem;
+  align-content: center;
 }
 
 /* --- Small screens ---------------------------------------------------------------------- */
@@ -1279,9 +1564,14 @@ input[aria-invalid='true'] {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .landing {
+  .landing-hero {
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
+    min-height: 0;
+  }
+
+  .how-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1298,6 +1588,18 @@ input[aria-invalid='true'] {
   .row {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.7rem;
+  }
+
+  .skeleton-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .skeleton-seats {
+    width: 10.5rem;
+  }
+
+  .race-result {
+    min-height: 15rem;
   }
 
   .person-row,
