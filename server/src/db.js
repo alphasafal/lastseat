@@ -137,6 +137,21 @@ export async function ensureIndexes() {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * How long a rolled-back attempt waits before running again.
+ *
+ * A retry that arrives before the winner has committed only conflicts again, so the wait has
+ * to outlast the winner. Nobody tells us how long that is, but the attempt that just failed is
+ * a good estimate: it went through the same database under the same load. So the wait is at
+ * least an exponential floor (20, 40, 80 ... 250 ms) and otherwise as long as the failed
+ * attempt took, capped at 2 s. Half of it is random so the losers do not come back together.
+ */
+export function retryDelayMs(attempt, lastAttemptMs) {
+  const floor = Math.min(10 * 2 ** attempt, 250);
+  const ceiling = Math.min(Math.max(floor, lastAttemptMs), 2000);
+  return ceiling * (0.5 + Math.random() / 2);
+}
+
+/**
  * Runs `work` in a transaction. The driver re-invokes the callback when MongoDB reports a
  * transient error, which is exactly what happens to the losers of a race: two transactions
  * touched the same team document, one commits, the other gets a WriteConflict, is rolled back
@@ -158,6 +173,7 @@ export async function withTransaction(work) {
   const session = client.startSession();
   const startedAt = Date.now();
   let attempt = 0;
+  let attemptStartedAt = startedAt;
   try {
     const result = await session.withTransaction(
       async () => {
@@ -167,11 +183,9 @@ export async function withTransaction(work) {
         if (attempt > 1) {
           metrics.txnRetries.inc();
           if (Date.now() - startedAt > config.txnDeadlineMs) throw errors.busy();
-          // Jittered backoff so 49 losers do not all retry in the same millisecond. A retry
-          // that arrives before the winner has committed only conflicts again, so the wait
-          // grows quickly: up to 40 ms, 80 ms, 160 ms, then 250 ms.
-          await sleep(Math.random() * Math.min(10 * 2 ** attempt, 250));
+          await sleep(retryDelayMs(attempt, Date.now() - attemptStartedAt));
         }
+        attemptStartedAt = Date.now();
         return work(session);
       },
       { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } },
