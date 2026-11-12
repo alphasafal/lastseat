@@ -10,7 +10,10 @@ const CLAIM = `teams.findOneAndUpdate(
   },
   {
     $push: { members: me },
-    $inc: { openSeats: -1, memberCount: 1 },
+    $inc: {
+      openSeats: -1,
+      memberCount: 1,
+    },
   },
 );`;
 
