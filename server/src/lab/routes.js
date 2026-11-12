@@ -8,8 +8,9 @@
 
 import { Router } from 'express';
 import { config } from '../config.js';
-import { ObjectId, col, withTransaction } from '../db.js';
+import { ObjectId, col, db, withTransaction } from '../db.js';
 import { getLabHackathon } from '../hackathons.js';
+import { logger } from '../lib/logger.js';
 import { hit } from '../lib/rateLimit.js';
 import { utcOffsetMinutes } from '../lib/time.js';
 import { parse, schemas } from '../lib/validate.js';
@@ -168,6 +169,10 @@ labRouter.post('/race', async (req, res) => {
       );
     }
 
+    // Open one connection per contender before the clock starts. Otherwise the first run on
+    // a cold pool would mostly measure TLS handshakes instead of the contention.
+    await Promise.all(racers.map(() => db().command({ ping: 1 })));
+
     // The race. Every contender starts in the same tick of the event loop.
     const startedAt = performance.now();
     let finished = 0;
@@ -238,6 +243,13 @@ labRouter.post('/race', async (req, res) => {
       },
     ];
 
+    const retries = results.reduce((sum, result) => sum + result.attempts - 1, 0);
+    const passed = checks.every((check) => check.ok);
+    logger.info(
+      { contenders, seats, durationMs, totalMs: Date.now() - at.getTime(), retries, passed },
+      'race lab run',
+    );
+
     res.json({
       contenders,
       seats,
@@ -245,8 +257,8 @@ labRouter.post('/race', async (req, res) => {
       joined,
       teamFull: full,
       other: contenders - joined - full,
-      retries: results.reduce((sum, result) => sum + result.attempts - 1, 0),
-      passed: checks.every((check) => check.ok),
+      retries,
+      passed,
       checks,
       results,
       team: teamView(team),
