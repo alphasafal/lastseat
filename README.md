@@ -7,19 +7,34 @@ Built for the Hack4Hack Crew Hiring Challenge 2026, problem statement 1.
 
 [![CI](https://github.com/alphasafal/lastseat/actions/workflows/ci.yml/badge.svg)](https://github.com/alphasafal/lastseat/actions/workflows/ci.yml)
 
-- **Live demo:** REPLACE_WITH_LIVE_URL (click "Try a demo account"; the free tier sleeps when
-  idle, so the first request can take up to a minute)
+- **Live demo:** REPLACE_WITH_LIVE_URL. Press "Run the race" on the first screen: no account
+  needed. Then "Try a demo account" for the product itself.
 - **Design doc (1 page):** [docs/DESIGN.md](docs/DESIGN.md)
 - **Load-test report:** [docs/LOAD_TEST_REPORT.md](docs/LOAD_TEST_REPORT.md)
 
 Stack: React 19 + Vite, Node.js 22 + Express 5, MongoDB 8 (official driver). No Redis, no
 message broker, no ORM.
 
+## Try the claim yourself
+
+The landing page has a button, **Run the race**. It makes the server create a throwaway team
+with one seat left and 50 throwaway people, lets all 50 join in the same instant through the
+same code path a normal join uses, and shows what the database decided: who got the seat, that
+the other 49 were told the team is full, how long it took, and six checks read back from the
+stored data. Nothing is simulated, and everything the run created is deleted afterwards.
+(`POST /api/lab/race`, [`server/src/lab/routes.js`](server/src/lab/routes.js).)
+
+![Landing page after a race: one winner, 49 told the team is full, six checks passed](docs/screenshots/race.png)
+
 ![The board: teams with open seats, drawn as rows of seats](docs/screenshots/board.png)
 
 | Team page as the leader                 | Suggested teammates, with the score explained    |
 | --------------------------------------- | ------------------------------------------------ |
 | ![Team page](docs/screenshots/team.png) | ![Suggestions](docs/screenshots/suggestions.png) |
+
+| Dark theme (follows the system setting)        | On a phone                                  |
+| ---------------------------------------------- | ------------------------------------------- |
+| ![Dark theme](docs/screenshots/board-dark.png) | ![Phone layout](docs/screenshots/phone.png) |
 
 ## Run it
 
@@ -80,7 +95,7 @@ lets all 50 people into the last seat in every round; the conditional update let
 | Leadership passes on when the leader leaves  | `detachMember` in `service.js` (longest-standing member)                                             | `teams.test.js`                                  |
 | Last member leaving deletes the team         | `detachMember`, also closes invites and requests                                                     | `teams.test.js`, `race.test.js`                  |
 | Join requests the leader accepts or declines | `join_requests`, same atomic claim on accept                                                         | `requests.test.js`                               |
-| Race-proof: 50 people, one seat, one winner  | conditional update + unique index + transaction                                                      | `race.test.js` (8 concurrency tests)             |
+| Race-proof: 50 people, one seat, one winner  | conditional update + unique index + transaction                                                      | `race.test.js` (8 tests), live race lab          |
 | Idempotent retries                           | `Idempotency-Key` stored in the same transaction ([`idempotency.js`](server/src/lib/idempotency.js)) | `idempotency.test.js`                            |
 | Real-time board and team pages               | SSE fed by a change stream on the audit log ([`realtime/`](server/src/realtime))                     | `realtime.test.js`, `e2e/flow.mjs`               |
 | Authentication                               | scrypt passwords, hashed session tokens, httpOnly SameSite cookie, Origin check                      | `auth.test.js`                                   |
@@ -89,7 +104,7 @@ lets all 50 people into the last seat in every round; the conditional update let
 | Every input validated                        | strict zod schemas for bodies, queries and ids ([`validate.js`](server/src/lib/validate.js))         | `teams.test.js` "ids, bodies and unknown fields" |
 | Audit log: who, what, when                   | `audit_log`, written in the same transaction as the change                                           | `audit.test.js`                                  |
 | Teammate suggestions with explained scoring  | pure functions in [`board/score.js`](server/src/board/score.js)                                      | `suggestions.test.js`                            |
-| At least 20 API tests in CI                  | 81 tests, GitHub Actions                                                                             | [`ci.yml`](.github/workflows/ci.yml)             |
+| At least 20 API tests in CI                  | 86 tests, GitHub Actions                                                                             | [`ci.yml`](.github/workflows/ci.yml)             |
 | Seed 10,000 users and 2,000 teams            | [`scripts/seed.js`](server/scripts/seed.js)                                                          | `npm run seed`                                   |
 | Load test, p95 under 200 ms at 100 users     | k6, [`loadtest/board.js`](loadtest/board.js)                                                         | [report](docs/LOAD_TEST_REPORT.md)               |
 | React UI, phone and keyboard only            | [`web/`](web/src)                                                                                    | `e2e/flow.mjs`                                   |
@@ -97,12 +112,13 @@ lets all 50 people into the last seat in every round; the conditional update let
 
 Bonus items: optimistic UI with rollback on conflict (`web/src/pages/Team.jsx`, checked in
 `e2e/flow.mjs`), Docker Compose, Prometheus metrics at `/metrics`, and a chaos test that kills
-the server in the middle of a join (`server/test/chaos.test.js`).
+the server in the middle of a join (`server/test/chaos.test.js`). Beyond the brief: the public
+race lab, and a dark theme that follows the system setting.
 
 ## Tests
 
 ```bash
-npm test             # 81 tests against a real MongoDB, about 45 s
+npm test             # 86 tests against a real MongoDB, about 45 s
 npm run test:race    # only the concurrency tests
 npm run test:chaos   # SIGKILL the server mid-join, check nothing is corrupted
 npm run verify       # check every data invariant against the current database
@@ -148,6 +164,7 @@ on `code`. Writes accept an `Idempotency-Key` header.
 | `PUT /teams/:id/leader`                                               | leader hands over leadership                      |
 | `GET, POST /teams/:id/invites`, `DELETE /teams/:id/invites/:inviteId` | invite codes (leader)                             |
 | `POST /invites/join`                                                  | take a seat with a code                           |
+| `POST /lab/race`                                                      | public: stage a 50-way race, report the outcome   |
 | `POST /teams/:id/requests`, `GET /teams/:id/requests`                 | ask to join; leader's inbox                       |
 | `POST /requests/:id/accept`, `/decline`, `/cancel`                    | decide or withdraw a request                      |
 | `GET /teams/:id/audit`, `GET /hackathons/:id/audit`                   | history (members; organizers)                     |
@@ -156,13 +173,28 @@ on `code`. Writes accept an `Idempotency-Key` header.
 
 ## Deploy (free tier)
 
-1. Create a free MongoDB Atlas cluster, allow access from anywhere, copy the connection string.
-2. On Render choose New > Blueprint and pick this repository. [`render.yaml`](render.yaml)
-   defines the service; paste the connection string as `MONGODB_URI`.
-3. Seed the hosted database once from your machine: `MONGODB_URI="<atlas uri>" npm run seed`.
+The live demo runs on Vercel (Hobby) with a MongoDB Atlas free cluster.
 
-The Express process serves the built React app, so the UI and the API share one origin:
-cookies are first-party and there is no CORS configuration.
+1. Create a free MongoDB Atlas cluster, allow access from anywhere, copy the connection string.
+2. Import this repository in Vercel. [`vercel.json`](vercel.json) holds the build and routing.
+3. Set the environment variables below and deploy. The build seeds the database (10,000 users,
+   2,000 teams) the first time and skips it afterwards.
+
+| Variable            | Value                                                              |
+| ------------------- | ------------------------------------------------------------------ |
+| `MONGODB_URI`       | the Atlas connection string, with `/lastseat` as the database name |
+| `TRUST_PROXY`       | `1`, so rate limits see the visitor's address                      |
+| `MONGO_MAX_POOL`    | `10`, because serverless instances multiply                        |
+| `SSE_MAX_STREAM_MS` | `280000`, to end event streams just before the 300 s request limit |
+
+On Vercel the React app is served as static files and the whole API is one function
+([`api/index.js`](api/index.js)) on the same origin, so cookies are first-party and there is no
+CORS configuration. An instance stays alive while it has an event stream open and tails its
+own change stream, so live updates work without any extra service.
+
+The same code runs as one long-lived process anywhere Node runs: `npm run build && npm start`
+serves the UI and the API from Express. [`render.yaml`](render.yaml) and the
+[`Dockerfile`](Dockerfile) are ready for that.
 
 ## Layout
 
@@ -172,10 +204,12 @@ server/src/db.js              indexes (the invariants) and the transaction helpe
 server/src/lib/               idempotency, audit, validation, rate limits, invariant checker
 server/src/realtime/          change stream -> hub -> SSE
 server/src/board/             board queries, page cache, suggestion scoring
+server/src/lab/               the public race lab
+api/index.js                  serverless entry (Vercel); server/src/index.js is the long-running one
 server/test/                  API, race and chaos tests
 web/src/                      React app
 loadtest/                     k6 script, SSE latency probe, results
-e2e/flow.mjs                  browser flow: live updates, keyboard only, optimistic rollback
+e2e/flow.mjs                  browser flow: race lab, live updates, keyboard only, rollback
 ```
 
 ## Known limits
@@ -186,6 +220,8 @@ Stated plainly, because they are the first things I would fix:
   write-locked until its transaction timeout (60 s by default). Other teams are unaffected and
   nothing is corrupted; requests for that team get a retryable `503 BUSY` meanwhile.
 - A client that reconnects to the stream refetches its page instead of replaying missed events.
+  On Vercel a stream is ended every 280 s (the platform caps requests at 300 s), so this
+  happens routinely there; the page stays correct and the indicator does not flicker.
 - The per-request API rate limit is in memory, so it is per server instance. The limits that
   protect logins and invite codes are stored in MongoDB and hold across instances.
 - The browser flow in `e2e/` runs locally but is not part of CI yet.

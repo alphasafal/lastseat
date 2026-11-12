@@ -48,7 +48,8 @@ which makes concurrent attempts conflict and therefore run one after another.
 **Proof.** `race.test.js` fires real concurrent HTTP requests: 50 for one seat, 40 for three,
 10 parallel accepts, one person into two teams, 20 simultaneous creates, last member leaving
 against 20 joins, and a mixed storm. After each it runs an invariant checker over the whole
-database. `chaos.test.js` kills the server between the claim and the commit.
+database. `chaos.test.js` kills the server between the claim and the commit. The live site
+has a button that runs the 50-way race on the production database and shows the result.
 
 ## Trade-offs
 
