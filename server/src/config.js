@@ -80,6 +80,9 @@ export const config = {
 
   sse: {
     heartbeatMs: 25_000,
+    // Hosts that cap request duration (serverless) cut a stream without warning. Ending it
+    // ourselves a little earlier lets the browser reconnect cleanly. 0 = never.
+    maxStreamMs: int('SSE_MAX_STREAM_MS', 0),
     maxStreamsPerUser: 6,
     maxBufferedBytes: 256 * 1024,
   },

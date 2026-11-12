@@ -51,9 +51,14 @@ realtimeRouter.get('/stream', async (req, res) => {
 
   const heartbeat = setInterval(() => res.write(': keep-alive\n\n'), config.sse.heartbeatMs);
   heartbeat.unref();
+  const expiry = config.sse.maxStreamMs
+    ? setTimeout(() => res.end(), config.sse.maxStreamMs)
+    : null;
+  expiry?.unref();
 
   req.on('close', () => {
     clearInterval(heartbeat);
+    clearTimeout(expiry);
     unsubscribe();
   });
 });
