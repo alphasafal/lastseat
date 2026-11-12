@@ -19,7 +19,7 @@ export const INDEX = {
 
 export async function connect(uri = config.mongoUri) {
   client = new MongoClient(uri, {
-    maxPoolSize: 100,
+    maxPoolSize: config.mongoMaxPool,
     // Majority writes + snapshot reads are what make a committed join survive a crash.
     writeConcern: { w: 'majority' },
     retryWrites: true,

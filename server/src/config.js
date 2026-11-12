@@ -15,6 +15,8 @@ export const config = {
   port: int('PORT', 4000),
   mongoUri: env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/lastseat?directConnection=true',
   trustProxy: int('TRUST_PROXY', 0),
+  // Connections per server instance. Keep it small on serverless, where instances multiply.
+  mongoMaxPool: int('MONGO_MAX_POOL', 100),
   metricsToken: env.METRICS_TOKEN ?? '',
   logLevel: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : 'info'),
 
@@ -55,6 +57,9 @@ export const config = {
     authPerIp: { limit: int('RATE_AUTH_PER_IP', 300), windowSec: 15 * 60 },
     inviteJoinPerUser: { limit: 10, windowSec: 10 * 60 },
     inviteJoinPerIp: { limit: int('RATE_INVITE_PER_IP', 60), windowSec: 10 * 60 },
+    // The public race lab creates and deletes ~55 documents per run.
+    labPerIp: { limit: int('RATE_LAB_PER_IP', 8), windowSec: 10 * 60 },
+    labGlobal: { limit: 40, windowSec: 60 },
     // Per-session ceiling for everything else, kept in memory because it is only a politeness cap.
     apiPerUser: { limit: int('RATE_API_PER_USER', 600), windowSec: 60 },
   },
