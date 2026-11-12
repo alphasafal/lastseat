@@ -7,8 +7,8 @@ Built for the Hack4Hack Crew Hiring Challenge 2026, problem statement 1.
 
 [![CI](https://github.com/alphasafal/lastseat/actions/workflows/ci.yml/badge.svg)](https://github.com/alphasafal/lastseat/actions/workflows/ci.yml)
 
-- **Live demo:** REPLACE_WITH_LIVE_URL. Press "Run the race" on the first screen: no account
-  needed. Then "Try a demo account" for the product itself.
+- **Live demo:** https://lastseat-mu.vercel.app. Press "Run the race" on the first screen: no
+  account needed. Then "Try a demo account" for the product itself.
 - **Design doc (1 page):** [docs/DESIGN.md](docs/DESIGN.md)
 - **Load-test report:** [docs/LOAD_TEST_REPORT.md](docs/LOAD_TEST_REPORT.md)
 
@@ -104,7 +104,7 @@ lets all 50 people into the last seat in every round; the conditional update let
 | Every input validated                        | strict zod schemas for bodies, queries and ids ([`validate.js`](server/src/lib/validate.js))         | `teams.test.js` "ids, bodies and unknown fields" |
 | Audit log: who, what, when                   | `audit_log`, written in the same transaction as the change                                           | `audit.test.js`                                  |
 | Teammate suggestions with explained scoring  | pure functions in [`board/score.js`](server/src/board/score.js)                                      | `suggestions.test.js`                            |
-| At least 20 API tests in CI                  | 86 tests, GitHub Actions                                                                             | [`ci.yml`](.github/workflows/ci.yml)             |
+| At least 20 API tests in CI                  | 91 tests, GitHub Actions                                                                             | [`ci.yml`](.github/workflows/ci.yml)             |
 | Seed 10,000 users and 2,000 teams            | [`scripts/seed.js`](server/scripts/seed.js)                                                          | `npm run seed`                                   |
 | Load test, p95 under 200 ms at 100 users     | k6, [`loadtest/board.js`](loadtest/board.js)                                                         | [report](docs/LOAD_TEST_REPORT.md)               |
 | React UI, phone and keyboard only            | [`web/`](web/src)                                                                                    | `e2e/flow.mjs`                                   |
@@ -118,7 +118,7 @@ race lab, and a dark theme that follows the system setting.
 ## Tests
 
 ```bash
-npm test             # 86 tests against a real MongoDB, about 45 s
+npm test             # 91 tests against a real MongoDB, about 45 s
 npm run test:race    # only the concurrency tests
 npm run test:chaos   # SIGKILL the server mid-join, check nothing is corrupted
 npm run verify       # check every data invariant against the current database
@@ -180,12 +180,14 @@ The live demo runs on Vercel (Hobby) with a MongoDB Atlas free cluster.
 3. Set the environment variables below and deploy. The build seeds the database (10,000 users,
    2,000 teams) the first time and skips it afterwards.
 
-| Variable            | Value                                                              |
-| ------------------- | ------------------------------------------------------------------ |
-| `MONGODB_URI`       | the Atlas connection string, with `/lastseat` as the database name |
-| `TRUST_PROXY`       | `1`, so rate limits see the visitor's address                      |
-| `MONGO_MAX_POOL`    | `10`, because serverless instances multiply                        |
-| `SSE_MAX_STREAM_MS` | `280000`, to end event streams just before the 300 s request limit |
+| Variable            | Value                                                                        |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `MONGODB_URI`       | the Atlas connection string, with `/lastseat` as the database name           |
+| `TRUST_PROXY`       | `1`, so rate limits see the visitor's address                                |
+| `MONGO_MAX_POOL`    | `10`, because serverless instances multiply                                  |
+| `SSE_MAX_STREAM_MS` | `280000`, to end event streams just before the 300 s request limit           |
+| `TXN_DEADLINE_MS`   | `25000`, because a free Atlas cluster is limited to 100 operations a second  |
+| `LAB_NOTE`          | optional: a sentence shown under race results (the demo explains that limit) |
 
 On Vercel the React app is served as static files and the whole API is one function
 ([`api/index.js`](api/index.js)) on the same origin, so cookies are first-party and there is no
@@ -224,5 +226,8 @@ Stated plainly, because they are the first things I would fix:
   happens routinely there; the page stays correct and the indicator does not flicker.
 - The per-request API rate limit is in memory, so it is per server instance. The limits that
   protect logins and invite codes are stored in MongoDB and hold across instances.
+- The hosted demo's database is a free cluster limited to 100 operations a second. The
+  50-way race takes 4 to 5 s there and about 0.3 s without the limit; the outcome is the same.
+  Section 5 of the [load-test report](docs/LOAD_TEST_REPORT.md) has the measurements.
 - The browser flow in `e2e/` runs locally but is not part of CI yet.
 - A person's name cannot be changed after sign-up.
