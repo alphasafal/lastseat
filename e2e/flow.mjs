@@ -83,6 +83,17 @@ const memberCount = (page) => page.$$eval('.members .member', (items) => items.l
 const step = (name) => console.log(`ok - ${name}`);
 
 try {
+  // --- The race lab on the landing page, without an account ------------------------------
+  const visitor = await person();
+  await clickText(visitor, 'Run the race');
+  await visitor.waitForSelector('.checks', { timeout: 30_000 });
+  assert.equal(await visitor.$$eval('.check-ok', (items) => items.length), 6);
+  assert.equal(await visitor.$$eval('.check-bad', (items) => items.length), 0);
+  assert.equal(await visitor.$$eval('.dot-won', (dots) => dots.length), 1);
+  assert.equal(await visitor.$$eval('.dot-full', (dots) => dots.length), 49);
+  assert.match(await visitor.$eval('.race-sentence', (el) => el.textContent), /other 49 were told/);
+  step('race lab: 50 real joins for one seat, one winner, six checks pass');
+
   // --- Keyboard only: sign in, create a team, mint an invite code -------------------------
   const leader = await person();
   await tabTo(leader, 'Try a demo account');
