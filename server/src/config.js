@@ -64,6 +64,12 @@ export const config = {
     apiPerUser: { limit: int('RATE_API_PER_USER', 600), windowSec: 60 },
   },
 
+  lab: {
+    // Shown under a race result. Lets a deployment say something true about its own database,
+    // for example that a free shared cluster rate-limits operations.
+    note: env.LAB_NOTE ?? '',
+  },
+
   board: {
     defaultPageSize: 24,
     maxPageSize: 50,

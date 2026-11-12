@@ -171,6 +171,7 @@ function Outcome({ run, winners }) {
           </li>
         ))}
       </ul>
+      {run.note && <p className="race-meta">{run.note}</p>}
     </>
   );
 }

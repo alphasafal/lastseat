@@ -263,6 +263,7 @@ labRouter.post('/race', async (req, res) => {
       checks,
       results,
       team: teamView(team),
+      ...(config.lab.note && { note: config.lab.note }),
     });
   } finally {
     await cleanUp(hackathon, { userIds, teamId }).catch(() => {});
