@@ -1,17 +1,11 @@
-import { createApp } from './app.js';
+import { boot } from './boot.js';
 import { config } from './config.js';
-import { connect, disconnect, ensureIndexes } from './db.js';
-import { ensureDefaultHackathon } from './hackathons.js';
+import { disconnect } from './db.js';
 import { logger } from './lib/logger.js';
-import { startChangeStream, stopChangeStream } from './realtime/changeStream.js';
+import { stopChangeStream } from './realtime/changeStream.js';
 import { closeAll } from './realtime/hub.js';
 
-await connect();
-await ensureIndexes();
-await ensureDefaultHackathon();
-await startChangeStream();
-
-const server = createApp().listen(config.port, () => {
+const server = (await boot()).listen(config.port, () => {
   logger.info({ port: config.port, env: config.env }, 'lastseat listening');
 });
 
