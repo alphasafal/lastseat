@@ -933,6 +933,9 @@ input[aria-invalid='true'] {
 
 .team-page {
   display: grid;
+  /* minmax(0, ...) lets the column get narrower than its widest child, so a 320 px phone
+     wraps the content instead of scrolling sideways. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
 }
 
