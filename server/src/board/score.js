@@ -1,5 +1,5 @@
 // Teammate scoring. Pure functions with no I/O, so every number in a suggestion can be
-// reproduced by hand and is covered by unit tests (test/score.test.js).
+// reproduced by hand and is covered by unit tests (test/suggestions.test.js).
 
 import { formatOffset } from '../lib/time.js';
 
@@ -20,8 +20,16 @@ export function overlapMinutes(offsetA, offsetB, window) {
 }
 
 const round = (value, places = 2) => Math.round(value * 10 ** places) / 10 ** places;
-const list = (items) =>
-  items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
+
+// How a skill id reads inside a sentence. Only ids that are not already plain words are listed.
+const SKILL_NAMES = { ml: 'ML', devops: 'DevOps', gamedev: 'game dev', fullstack: 'full-stack' };
+/** "design", "design and ML", "design, ML and DevOps" */
+function list(skills) {
+  const names = skills.map((skill) => SKILL_NAMES[skill] ?? skill);
+  return names.length <= 1
+    ? names.join('')
+    : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+}
 
 /**
  * @param {{have: string[], wanted: string[], offsets: number[]}} context the team (or solo user)
