@@ -1,5 +1,6 @@
-// End-to-end check of the UI in a real browser: three people, live updates, keyboard-only
-// use, optimistic rollback and a phone-sized viewport.
+// End-to-end check of the UI in a real browser: several people at once, live updates,
+// keyboard-only use, optimistic rollback, removing a member, an invite link, a hidden tab
+// that pauses and catches up, and a phone-sized viewport.
 //
 //   npm run build && npm start          # in one terminal (needs `npm run seed` once)
 //   npm run e2e                         # in another
@@ -210,6 +211,46 @@ try {
   await until(staleTab, () => document.querySelectorAll('.request-row').length === 1);
   assert.equal(await memberCount(staleTab), 4, 'after the rollback the tab shows the real team');
   step('optimistic accept is rolled back when the last seat was taken elsewhere');
+
+  // --- Removing a member frees a seat, and an invite link fills it ------------------------
+  await leader.bringToFront();
+  await clickText(leader, 'Remove');
+  await leader.waitForSelector('dialog[open]');
+  await clickText(leader, 'Remove from team');
+  await until(leader, () => document.querySelectorAll('.members .member').length === 3);
+  await until(third, () => document.querySelectorAll('.seat-open').length === 1);
+  step('the leader removes a member and the open seat shows up for the others live');
+
+  // A tab nobody is looking at lets go of its stream after a grace period (an open stream
+  // holds a connection on the server; see web/src/lib/live.js). Hide one member's tab here,
+  // let the team change, and show the tab again further down.
+  const setHidden = (page, hidden) =>
+    page.evaluate((value) => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => value });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, hidden);
+  await setHidden(third, true);
+  await third.waitForFunction(() => document.querySelector('.live')?.textContent === 'Paused', {
+    polling: 500,
+    timeout: 40_000,
+  });
+
+  // Someone without an account opens the invite link: they are told why they are here, and
+  // signing in on that page takes them straight into the seat.
+  const guest = await person();
+  await guest.goto(`${BASE_URL}/join/${code}`, { waitUntil: 'networkidle0' });
+  assert.match(await guest.$eval('.invite-notice', (el) => el.textContent), /invite to a team/);
+  await clickText(guest, 'Try a demo account');
+  await guest.waitForSelector('.team-page');
+  assert.equal(await guest.$eval('h1', (h1) => h1.textContent), teamName);
+  await until(leader, () => document.querySelectorAll('.members .member').length === 4);
+  step('an invite link opened signed out: sign in on that page, land in the seat');
+
+  assert.equal(await memberCount(third), 3, 'the hidden tab has not heard about the new member');
+  await setHidden(third, false);
+  await until(third, () => document.querySelectorAll('.members .member').length === 4);
+  await until(third, () => document.querySelector('.live').textContent === 'Live');
+  step('a hidden tab lets go of its stream and catches up when it is shown again');
 
   await sleep(200);
   assert.deepEqual(

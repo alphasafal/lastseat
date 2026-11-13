@@ -230,7 +230,8 @@ api/index.js                  serverless entry (Vercel); server/src/index.js is 
 server/test/                  API, race and chaos tests
 web/src/                      React app
 loadtest/                     k6 script, SSE latency probe, rate-limit proxy, results
-e2e/flow.mjs                  browser flow: race lab, live updates, keyboard only, rollback
+e2e/flow.mjs                  browser flow: race lab, live updates, keyboard only, rollback,
+                              remove, invite link, hidden tab
 ```
 
 ## Known limits
