@@ -140,6 +140,7 @@ labRouter.post('/race', async (req, res) => {
   const racers = rest.slice(alreadySeated - 1);
   const userIds = everyone.map((user) => user._id);
   let teamId = null;
+  let report;
 
   try {
     await col.users().insertMany(everyone);
@@ -251,7 +252,7 @@ labRouter.post('/race', async (req, res) => {
       'race lab run',
     );
 
-    res.json({
+    report = {
       contenders,
       seats,
       durationMs,
@@ -264,8 +265,12 @@ labRouter.post('/race', async (req, res) => {
       results,
       team: teamView(team),
       ...(config.lab.note && { note: config.lab.note }),
-    });
+    };
   } finally {
+    // Whether the run worked or threw. If the clean-up itself fails, the next run removes
+    // what is left once it is ten minutes old (cleanUp without arguments, above).
     await cleanUp(hackathon, { userIds, teamId }).catch(() => {});
   }
+  // Answer only now, so that "deleted before it answers" is true for the caller.
+  res.json(report);
 });
