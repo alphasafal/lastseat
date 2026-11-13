@@ -1,7 +1,7 @@
 // k6 load test for the teammate board.
 //
 //   k6 run loadtest/board.js                                  # 100 users, 2 minutes
-//   k6 run -e BASE_URL=https://your-app.onrender.com loadtest/board.js
+//   k6 run -e BASE_URL=https://your-app.example loadtest/board.js
 //   k6 run -e MODE=saturate loadtest/board.js                 # no think time: find the ceiling
 //
 // Prerequisite: `npm run seed` (10,000 users, 2,000 teams). Each virtual user signs in as a

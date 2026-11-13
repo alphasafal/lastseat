@@ -155,9 +155,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  *
  * A retry that arrives before the winner has committed only conflicts again, so the wait has
  * to outlast the winner. Nobody tells us how long that is, but the attempt that just failed is
- * a good estimate: it went through the same database under the same load. So the wait is at
- * least an exponential floor (20, 40, 80 ... 250 ms) and otherwise as long as the failed
- * attempt took, capped at 2 s. Half of it is random so the losers do not come back together.
+ * a good estimate: it went through the same database under the same load. So the wait is as
+ * long as the failed attempt took, but never less than an exponential floor (40, 80, 160,
+ * 250 ms) and never more than 2 s. The actual wait is a random point in the upper half of
+ * that, so the losers do not all come back together.
  */
 export function retryDelayMs(attempt, lastAttemptMs) {
   const floor = Math.min(10 * 2 ** attempt, 250);

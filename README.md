@@ -194,7 +194,9 @@ The live demo runs on Vercel (Hobby) with a MongoDB Atlas free cluster.
 | `SSE_IDLE_PAUSE_MS`        | `600000`: a page lets go of its stream after 10 minutes without input (see below)  |
 | `TXN_DEADLINE_MS`          | `25000`, because a free Atlas cluster is limited to 100 operations a second        |
 | `LAB_NOTE`                 | optional: a sentence shown under race results (the demo explains that limit)       |
+| `RATE_LAB_PER_IP`          | `20`: race lab runs per address per ten minutes (default 8)                        |
 | `RECONNECT_AFTER_PAUSE_MS` | `15000`, because Vercel freezes idle instances and their database sockets go stale |
+| `METRICS_TOKEN`            | optional: `/metrics` then needs `Authorization: Bearer <token>` (open on the demo) |
 
 On Vercel the React app is served as static files and the whole API is one function
 ([`api/index.js`](api/index.js)) on the same origin, so cookies are first-party and there is no
