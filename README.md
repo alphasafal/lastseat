@@ -191,7 +191,7 @@ The live demo runs on Vercel (Hobby) with a MongoDB Atlas free cluster.
 | `TRUST_PROXY`              | `1`, so rate limits see the visitor's address                                      |
 | `MONGO_MAX_POOL`           | `10`, because serverless instances multiply                                        |
 | `SSE_MAX_STREAM_MS`        | `280000`, to end event streams just before the 300 s request limit                 |
-| `SSE_IDLE_PAUSE_MS`        | `600000`: a page lets go of its stream after 10 minutes without input (see below)  |
+| `SSE_IDLE_PAUSE_MS`        | `3600000`: a page lets go of its stream after an hour without input (see below)    |
 | `TXN_DEADLINE_MS`          | `25000`, because a free Atlas cluster is limited to 100 operations a second        |
 | `LAB_NOTE`                 | optional: a sentence shown under race results (the demo explains that limit)       |
 | `RATE_LAB_PER_IP`          | `20`: race lab runs per address per ten minutes (default 8)                        |
@@ -210,9 +210,11 @@ Vercel bills an instance's memory for as long as it has a request in flight, and
 event stream is one. A forgotten browser tab would therefore keep an instance running around
 the clock and use up the free allowance in about a week. So a stream is only held while it is
 useful ([`web/src/lib/live.js`](web/src/lib/live.js)): a hidden tab closes it after 20 s,
-and with `SSE_IDLE_PAUSE_MS` set, so does a page nobody has touched for that long. The
-indicator then reads "Paused"; coming back to the page opens a new stream and refetches, so
-nothing is missed. On a long-running server the setting is off and only hidden tabs pause.
+and with `SSE_IDLE_PAUSE_MS` set, so does a visible page nobody has touched for that long.
+The indicator then reads "Paused"; coming back to the page opens a new stream and refetches,
+so nothing is missed. Hidden tabs are the common case and the one that matters; the hour is
+a backstop for a window left open on a screen that never sleeps. On a long-running server
+the setting is off and only hidden tabs pause.
 
 The same code runs as one long-lived process anywhere Node runs: `npm run build && npm start`
 serves the UI and the API from Express. [`render.yaml`](render.yaml) and the
@@ -244,7 +246,7 @@ Stated plainly, because they are the first things I would fix:
   write-locked until its transaction timeout (60 s by default). Other teams are unaffected and
   nothing is corrupted; requests for that team get a retryable `503 BUSY` meanwhile.
 - A client that reconnects to the stream refetches its page instead of replaying missed events.
-  The same happens when a paused page (hidden tab, or 10 minutes without input on the demo)
+  The same happens when a paused page (hidden tab, or an hour without input on the demo)
   resumes. On Vercel a stream is ended every 280 s (the platform caps requests at 300 s), so this
   happens routinely there; the page stays correct and the indicator does not flicker.
 - The per-request API rate limit is in memory, so it is per server instance. The limits that
