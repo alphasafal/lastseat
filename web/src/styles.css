@@ -610,7 +610,11 @@ input[aria-invalid='true'] {
 .tab-count {
   margin-left: 0.5rem;
   font-weight: 400;
-  opacity: 0.8;
+}
+
+/* The shorter label of a tab; swapped in on phones (see "Small screens"). */
+.tab-narrow {
+  display: none;
 }
 
 .filter {
@@ -1647,6 +1651,26 @@ input[aria-invalid='true'] {
   .tabs {
     width: 100%;
     border-bottom: 2px solid var(--ink);
+  }
+
+  /* All three board tabs side by side: short labels, the count on its own line. */
+  .tab-wide {
+    display: none;
+  }
+
+  .tab-narrow {
+    display: inline;
+  }
+
+  .board-controls .tab {
+    flex: 1 1 0;
+    padding: 0.55rem 0.35rem;
+  }
+
+  .board-controls .tab-count {
+    display: block;
+    margin-left: 0;
+    font-size: var(--step--1);
   }
 
   .rows,

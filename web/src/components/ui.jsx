@@ -81,7 +81,10 @@ export function SkillPicker({ legend, value, onChange, max, hint }) {
   );
 }
 
-/** Tabs following the ARIA pattern: arrow keys move between tabs, Tab moves into the panel. */
+/**
+ * Tabs following the ARIA pattern: arrow keys move between tabs, Tab moves into the panel.
+ * A tab may carry a `short` label, shown instead of `label` on a phone-sized screen.
+ */
 export function Tabs({ tabs, active, onChange, label }) {
   const refs = useRef({});
   const onKeyDown = (event) => {
@@ -111,7 +114,8 @@ export function Tabs({ tabs, active, onChange, label }) {
           className="tab"
           onClick={() => onChange(tab.id)}
         >
-          {tab.label}
+          <span className={tab.short ? 'tab-wide' : undefined}>{tab.label}</span>
+          {tab.short && <span className="tab-narrow">{tab.short}</span>}
           {tab.count !== undefined && (
             <span className="tab-count">{tab.count.toLocaleString()}</span>
           )}

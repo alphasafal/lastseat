@@ -38,9 +38,9 @@ export default function Board() {
   useLiveEvents(refreshTotals);
 
   const tabs = [
-    { id: 'teams', label: 'Teams with open seats', count: totals?.openTeams },
-    { id: 'people', label: 'People looking', count: totals?.peopleLooking },
-    { id: 'suggested', label: 'Suggested for you' },
+    { id: 'teams', label: 'Teams with open seats', short: 'Teams', count: totals?.openTeams },
+    { id: 'people', label: 'People looking', short: 'People', count: totals?.peopleLooking },
+    { id: 'suggested', label: 'Suggested for you', short: 'Suggested' },
   ];
 
   return (
