@@ -178,7 +178,7 @@ export function Field({ label, hint, error, children }) {
         'aria-invalid': error ? true : undefined,
       })}
       {error && (
-        <p className="field-error" id={`${id}-error`}>
+        <p className="field-error" id={`${id}-error`} role="alert">
           {error}
         </p>
       )}
