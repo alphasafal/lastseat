@@ -14,6 +14,16 @@ export class ApiError extends Error {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * A fresh Idempotency-Key. `randomUUID` only exists on HTTPS and localhost; `getRandomValues`
+ * exists everywhere, so the app also works when a dev server is opened from a phone by IP.
+ */
+function newKey() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 async function send(method, path, body, headers) {
   const res = await fetch(path, {
     method,
@@ -34,7 +44,7 @@ export const get = (path) => send('GET', path);
 
 /** A state-changing request: idempotent, retried on network failure and on 503 BUSY. */
 export async function write(method, path, body = {}) {
-  const headers = { 'Idempotency-Key': crypto.randomUUID() };
+  const headers = { 'Idempotency-Key': newKey() };
   for (let attempt = 1; ; attempt += 1) {
     try {
       return await send(method, path, body, headers);
