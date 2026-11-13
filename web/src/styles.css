@@ -1593,6 +1593,12 @@ input[aria-invalid='true'] {
     min-height: 0;
   }
 
+  /* Someone who followed an invite link came to sign in, so in one column that card goes
+     first instead of below the race lab. */
+  .landing-invited .landing-auth {
+    order: -1;
+  }
+
   .how-grid {
     grid-template-columns: minmax(0, 1fr);
   }

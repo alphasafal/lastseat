@@ -43,7 +43,7 @@ export default function Landing() {
 
   return (
     <main className="landing">
-      <div className="landing-hero">
+      <div className={inviteCode ? 'landing-hero landing-invited' : 'landing-hero'}>
         <section className="landing-pitch" aria-labelledby="pitch-title">
           <p className="brand brand-large">
             <span className="brand-mark" aria-hidden="true">
