@@ -1254,6 +1254,16 @@ input[aria-invalid='true'] {
   margin-bottom: 1.25rem;
 }
 
+/* Shown when a signed-out person opens an invite link. Marigold: there is a seat for you. */
+.invite-notice {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 2px dashed var(--marigold);
+  border-radius: var(--radius);
+  background: var(--marigold-wash);
+  font-weight: 600;
+}
+
 .landing-demo {
   display: grid;
   gap: 0.5rem;
