@@ -46,8 +46,9 @@ realtimeRouter.get('/stream', async (req, res) => {
   });
 
   // "ready" is sent after subscribing: anything committed from this point on will arrive
-  // as an event, so the client can safely fetch its initial data now.
-  res.write('event: ready\ndata: {}\n\n');
+  // as an event, so the client can safely fetch its initial data now. It also carries the
+  // one thing the client has to know about this server's streams (see config.sse.idlePauseMs).
+  res.write(`event: ready\ndata: ${JSON.stringify({ idleAfterMs: config.sse.idlePauseMs })}\n\n`);
 
   const heartbeat = setInterval(() => res.write(': keep-alive\n\n'), config.sse.heartbeatMs);
   heartbeat.unref();

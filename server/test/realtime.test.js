@@ -19,7 +19,10 @@ describe('live updates (server-sent events)', () => {
     const watcher = await ctx.participant(hackathon);
     const stream = await watcher.stream({ hackathonId: hackathon.id });
     assert.equal(stream.status, 200);
-    await stream.waitFor((event) => event.event === 'ready');
+    const ready = await stream.waitFor((event) => event.event === 'ready');
+    // A long-running server never asks the page to let go of an idle stream (that is opt-in,
+    // SSE_IDLE_PAUSE_MS, for hosts that bill per open connection).
+    assert.deepEqual(ready.data, { idleAfterMs: 0 });
 
     const squad = await ctx.team(hackathon, { name: 'Live Wires' });
     const created = await stream.waitFor(ofType('team.created', squad.id));

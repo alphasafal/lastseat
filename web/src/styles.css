@@ -523,7 +523,8 @@ input[aria-invalid='true'] {
 }
 
 .live-connecting,
-.live-reconnecting {
+.live-reconnecting,
+.live-paused {
   color: var(--muted);
 }
 

@@ -92,6 +92,9 @@ export const config = {
     // Hosts that cap request duration (serverless) cut a stream without warning. Ending it
     // ourselves a little earlier lets the browser reconnect cleanly. 0 = never.
     maxStreamMs: int('SSE_MAX_STREAM_MS', 0),
+    // Some hosts bill for every second a connection is open. The page is then told to let go
+    // of its stream after this long without any input, and to reopen it on the next. 0 = never.
+    idlePauseMs: int('SSE_IDLE_PAUSE_MS', 0),
     maxStreamsPerUser: 6,
     maxBufferedBytes: 256 * 1024,
   },

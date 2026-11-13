@@ -187,9 +187,18 @@ export function Field({ label, hint, error, children }) {
 }
 
 export function LiveBadge({ status }) {
-  const text = { live: 'Live', connecting: 'Connecting', reconnecting: 'Reconnecting' }[status];
+  const text = {
+    live: 'Live',
+    connecting: 'Connecting',
+    reconnecting: 'Reconnecting',
+    paused: 'Paused',
+  }[status];
+  const title =
+    status === 'paused'
+      ? 'Live updates pause while the page is not in use. They resume when you come back.'
+      : 'Updates appear without refreshing';
   return (
-    <span className={`live live-${status}`} title="Updates appear without refreshing">
+    <span className={`live live-${status}`} title={title}>
       <span className="live-dot" aria-hidden="true" />
       {text}
     </span>
